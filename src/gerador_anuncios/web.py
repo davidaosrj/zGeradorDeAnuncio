@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -80,7 +80,7 @@ def favicon() -> FileResponse:
 
 
 @app.get("/api/output-directories")
-def output_directories(path: str | None = None) -> dict:
+def output_directories(path: Optional[str] = None) -> dict:
     if not _absolute_outputs_enabled():
         raise HTTPException(403, "Seletor desabilitado. Configure ALLOW_ABSOLUTE_OUTPUT_PATHS=true")
     roots = _output_browser_roots()
@@ -133,7 +133,7 @@ async def create_product(
 
 
 @app.post("/api/products/{sku}/generate")
-async def generate(sku: str, mode: str = "auto", output_path: str | None = None) -> dict:
+async def generate(sku: str, mode: str = "auto", output_path: Optional[str] = None) -> dict:
     if mode not in {"auto", "offline", "online"}:
         raise HTTPException(400, "Modo inválido")
     repo = ProductRepository()
