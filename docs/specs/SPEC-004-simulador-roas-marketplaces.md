@@ -51,6 +51,8 @@ A página `/calculadora-mercado-livre` oferece os mesmos modos de lucro e preço
 
 A página `/calculadora-marketplaces` calcula lucro e preço ideal para Shopee, Mercado Livre, Magalu e Amazon. O menu Administração mantém comissão, taxa de pagamento, tarifa fixa, impostos, embalagem, logística, margem e data de revisão por plataforma no `localStorage`, com exportação e importação JSON.
 
+O resultado é recalculado automaticamente após alterações de preço, margem desejada, comissão, taxas, Ads ou custos. Alterar a margem desejada atualiza o preço ideal e o lucro correspondente; na Shopee, a faixa de comissão e a tarifa fixa são aplicadas antes de cada recálculo.
+
 O perfil inicial Shopee segue as faixas exibidas pela referência informada pelo usuário, indicadas como vigentes desde 01/03/2026: 20% + R$ 4 até R$ 79,99; 14% + R$ 16 de R$ 80 a R$ 99,99; 14% + R$ 20 de R$ 100 a R$ 199,99; e 14% + R$ 26 a partir de R$ 200. O adicional configurável para CPF com mais de 450 pedidos em 90 dias inicia em R$ 3. Esses valores têm origem e data visíveis e podem ser alterados no menu administrativo.
 
 Valores monetários e razões retornam como strings decimais para evitar perda de precisão. Percentuais de entrada usam a escala de 0 a 100.
