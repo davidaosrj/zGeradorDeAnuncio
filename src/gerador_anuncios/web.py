@@ -8,7 +8,7 @@ from typing import List
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse
 
 from .offline import OfflineGenerationError
 from .pipeline import IMAGE_SUFFIXES, generate_advertisement
@@ -16,6 +16,7 @@ from .repository import ProductRepository, ProductRepositoryError
 from .roas import RoasValidationError, calculate_simulation, evaluate_campaign
 
 app = FastAPI(title="Gerador de Anúncios", version="0.2.0")
+STATIC_DIR = Path(__file__).parent / "static"
 
 
 def _csv(value: str) -> list[str]:
@@ -24,12 +25,22 @@ def _csv(value: str) -> list[str]:
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    return (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
+    return (STATIC_DIR / "index.html").read_text(encoding="utf-8")
 
 
 @app.get("/roas", response_class=HTMLResponse)
 def roas_page() -> str:
-    return (Path(__file__).parent / "static" / "roas.html").read_text(encoding="utf-8")
+    return (STATIC_DIR / "roas.html").read_text(encoding="utf-8")
+
+
+@app.get("/logo-zonegeeklab3d.png", response_class=FileResponse)
+def brand_logo() -> Path:
+    return STATIC_DIR / "logo-zonegeeklab3d.png"
+
+
+@app.get("/favicon.ico", response_class=FileResponse)
+def favicon() -> FileResponse:
+    return FileResponse(STATIC_DIR / "logo-zonegeeklab3d.png", media_type="image/png")
 
 
 @app.post("/api/products")
