@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 from .offline import OfflineGenerationError
 from .pipeline import IMAGE_SUFFIXES, generate_advertisement
 from .repository import ProductRepository, ProductRepositoryError
+from .roas import RoasValidationError, calculate_simulation, evaluate_campaign
 
 app = FastAPI(title="Gerador de Anúncios", version="0.2.0")
 
@@ -24,6 +25,11 @@ def _csv(value: str) -> list[str]:
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
     return (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
+
+
+@app.get("/roas", response_class=HTMLResponse)
+def roas_page() -> str:
+    return (Path(__file__).parent / "static" / "roas.html").read_text(encoding="utf-8")
 
 
 @app.post("/api/products")
@@ -78,6 +84,18 @@ async def generate(sku: str, mode: str = "auto") -> dict:
 def product_status(sku: str) -> dict:
     try: return ProductRepository().status(sku)
     except ProductRepositoryError as exc: raise HTTPException(400, str(exc)) from exc
+
+
+@app.post("/api/roas/simulate")
+def simulate_roas(profile: dict) -> dict:
+    try: return calculate_simulation(profile)
+    except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/roas/evaluate")
+def evaluate_roas(profile: dict) -> dict:
+    try: return evaluate_campaign(profile)
+    except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
 
 
 def main() -> None:

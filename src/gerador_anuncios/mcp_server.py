@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from .pipeline import generate_advertisement
 from .repository import ProductRepository
+from .roas import calculate_simulation, evaluate_campaign
 
 mcp = FastMCP("gerador-anuncios", host="0.0.0.0", port=8001)
 
@@ -40,6 +41,31 @@ def gerar_anuncio(sku: str, modo: str = "auto") -> dict[str, Any]:
 def consultar_status(sku: str) -> dict[str, Any]:
     """Consulta o estado atual dos arquivos de entrada e saída."""
     return ProductRepository().status(sku)
+
+
+@mcp.tool()
+def calcular_roas_equilibrio(perfil: dict[str, Any]) -> dict[str, Any]:
+    """Calcula margem, ACOS/ROAS de equilíbrio e ROAS mínimo seguro."""
+    return calculate_simulation(perfil)
+
+
+@mcp.tool()
+def simular_orcamento_ads(perfil: dict[str, Any]) -> dict[str, Any]:
+    """Limita o orçamento diário por crédito, caixa, margem e estoque."""
+    return calculate_simulation(perfil)
+
+
+@mcp.tool()
+def avaliar_campanha_ativa(perfil: dict[str, Any]) -> dict[str, Any]:
+    """Avalia métricas pós-ativação, maturação e amostra mínima."""
+    return evaluate_campaign(perfil)
+
+
+@mcp.tool()
+def sugerir_ajuste_orcamento(perfil: dict[str, Any]) -> dict[str, Any]:
+    """Sugere ajuste, mas nunca executa alteração externa."""
+    result = evaluate_campaign(perfil)
+    return {"budget": result["budget"], "evaluation": result["evaluation"], "alerts": result["alerts"]}
 
 
 def main() -> None:
