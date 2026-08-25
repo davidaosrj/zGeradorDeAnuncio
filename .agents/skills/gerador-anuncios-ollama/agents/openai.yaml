@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gerador de Anúncios com Ollama"
+  short_description: "Opera o pipeline de anúncios usando Ollama remoto"
+  default_prompt: "Use o Ollama remoto para analisar o produto e gerar conteúdo fiel ao ADR-001."

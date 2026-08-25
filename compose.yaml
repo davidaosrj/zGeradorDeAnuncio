@@ -1,0 +1,19 @@
+services:
+  web:
+    build: .
+    command: gerador-web
+    ports: ["8000:8000"]
+    environment:
+      PRODUCTS_ROOT: /data/products
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.231:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+    volumes: ["./data/products:/data/products"]
+  mcp:
+    build: .
+    command: gerador-mcp
+    ports: ["8001:8001"]
+    environment:
+      PRODUCTS_ROOT: /data/products
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://192.168.1.231:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-}
+    volumes: ["./data/products:/data/products"]

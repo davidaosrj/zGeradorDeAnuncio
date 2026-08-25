@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gerador-anuncios"
+version = "0.1.0"
+description = "Pipeline, MCP e frontend para geração de anúncios"
+requires-python = ">=3.10"
+dependencies = [
+  "Pillow>=9.4",
+  "fastapi>=0.115,<1",
+  "mcp>=1.9,<2",
+  "python-multipart>=0.0.18",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+test = ["httpx>=0.27,<1"]
+
+[project.scripts]
+ollama-check = "gerador_anuncios.cli:main"
+anuncio-offline = "gerador_anuncios.offline_cli:main"
+gerar-anuncio = "gerador_anuncios.pipeline_cli:main"
+gerador-web = "gerador_anuncios.web:main"
+gerador-mcp = "gerador_anuncios.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+gerador_anuncios = ["static/*.html"]
