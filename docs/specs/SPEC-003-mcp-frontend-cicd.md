@@ -19,3 +19,5 @@ Frontend: `http://localhost:8000`. MCP: `http://localhost:8001/mcp`.
 O modo `auto` usa Ollama quando `OLLAMA_MODEL` está configurado e mantém fallback offline. O modo `offline` nunca acessa o Ollama; `online` falha se o serviço estiver indisponível.
 
 O gerador aceita uma subpasta relativa de saída. Caminhos absolutos somente são aceitos quando `ALLOW_ABSOLUTE_OUTPUT_PATHS=true`, pois concedem ao processo permissão para gravar fora da pasta do produto.
+
+Quando caminhos absolutos estão habilitados, o frontend exibe um seletor visual de diretórios. `OUTPUT_BROWSER_ROOTS`, separado pelo delimitador de caminhos do sistema, limita quais raízes podem ser navegadas. O endpoint lista somente diretórios, resolve links simbólicos e rejeita caminhos fora das raízes autorizadas.

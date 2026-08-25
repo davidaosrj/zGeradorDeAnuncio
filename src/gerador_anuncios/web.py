@@ -21,6 +21,20 @@ app = FastAPI(title="Gerador de Anúncios", version="0.2.0")
 STATIC_DIR = Path(__file__).parent / "static"
 
 
+def _absolute_outputs_enabled() -> bool:
+    return os.getenv("ALLOW_ABSOLUTE_OUTPUT_PATHS", "").lower() in {"1", "true", "yes"}
+
+
+def _output_browser_roots() -> list[Path]:
+    configured = os.getenv("OUTPUT_BROWSER_ROOTS", "")
+    candidates = [Path(item) for item in configured.split(os.pathsep) if item] if configured else [Path("/mnt/c"), ProductRepository().root]
+    return [path.expanduser().resolve() for path in candidates if path.expanduser().is_dir()]
+
+
+def _inside(path: Path, roots: list[Path]) -> bool:
+    return any(path == root or root in path.parents for root in roots)
+
+
 def _csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
@@ -63,6 +77,24 @@ def brand_logo() -> Path:
 @app.get("/favicon.ico", response_class=FileResponse)
 def favicon() -> FileResponse:
     return FileResponse(STATIC_DIR / "logo-zonegeeklab3d.png", media_type="image/png")
+
+
+@app.get("/api/output-directories")
+def output_directories(path: str | None = None) -> dict:
+    if not _absolute_outputs_enabled():
+        raise HTTPException(403, "Seletor desabilitado. Configure ALLOW_ABSOLUTE_OUTPUT_PATHS=true")
+    roots = _output_browser_roots()
+    if not roots:
+        raise HTTPException(503, "Nenhuma raiz de saída está disponível")
+    current = Path(path).expanduser().resolve() if path else roots[0]
+    if not _inside(current, roots) or not current.is_dir():
+        raise HTTPException(400, "Diretório fora das raízes autorizadas ou inexistente")
+    try:
+        directories = sorted((item for item in current.iterdir() if item.is_dir() and not item.name.startswith(".")), key=lambda item: item.name.lower())
+    except PermissionError as exc:
+        raise HTTPException(403, "Sem permissão para listar este diretório") from exc
+    parent = current.parent if current.parent != current and _inside(current.parent, roots) else None
+    return {"current": str(current), "parent": str(parent) if parent else None, "directories": [{"name": item.name, "path": str(item.resolve())} for item in directories], "roots": [str(root) for root in roots]}
 
 
 @app.post("/api/products")
@@ -111,7 +143,7 @@ async def generate(sku: str, mode: str = "auto", output_path: str | None = None)
         if output_path and output_path.strip():
             requested = Path(output_path.strip()).expanduser()
             if requested.is_absolute():
-                if os.getenv("ALLOW_ABSOLUTE_OUTPUT_PATHS", "").lower() not in {"1", "true", "yes"}:
+                if not _absolute_outputs_enabled():
                     raise ProductRepositoryError(
                         "Caminho absoluto bloqueado. Inicie com ALLOW_ABSOLUTE_OUTPUT_PATHS=true ou use uma subpasta relativa."
                     )
