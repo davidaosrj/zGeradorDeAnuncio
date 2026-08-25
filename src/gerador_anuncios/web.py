@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json
-from importlib.resources import files
 from pathlib import Path
+from typing import List
 
 import uvicorn
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -24,7 +23,7 @@ def _csv(value: str) -> list[str]:
 
 @app.get("/", response_class=HTMLResponse)
 def index() -> str:
-    return files("gerador_anuncios").joinpath("static/index.html").read_text(encoding="utf-8")
+    return (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
 
 
 @app.post("/api/products")
@@ -33,7 +32,7 @@ async def create_product(
     medidas: str = Form(""), cores: str = Form(""), compatibilidade: str = Form(""),
     itens_inclusos: str = Form(""), itens_nao_inclusos: str = Form(""),
     beneficios: str = Form(""), observacoes: str = Form(""),
-    processo_fabricacao: str = Form(""), images: list[UploadFile] = File(...),
+    processo_fabricacao: str = Form(""), images: List[UploadFile] = File(...),
 ) -> dict:
     repo = ProductRepository()
     data = {
