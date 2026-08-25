@@ -9,6 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from .pipeline import generate_advertisement
 from .repository import ProductRepository
 from .roas import calculate_simulation, evaluate_campaign
+from .sale_calculator import calculate_ideal_price, calculate_sale_profit
 
 mcp = FastMCP("gerador-anuncios", host="0.0.0.0", port=8001)
 
@@ -66,6 +67,19 @@ def sugerir_ajuste_orcamento(perfil: dict[str, Any]) -> dict[str, Any]:
     """Sugere ajuste, mas nunca executa alteração externa."""
     result = evaluate_campaign(perfil)
     return {"budget": result["budget"], "evaluation": result["evaluation"], "alerts": result["alerts"]}
+
+
+@mcp.tool()
+def calcular_lucro_por_venda(dados: dict[str, Any]) -> dict[str, Any]:
+    """Detalha quanto sobra por venda depois de custos, tarifas, impostos e Ads."""
+    return calculate_sale_profit(dados)
+
+
+@mcp.tool()
+def calcular_preco_ideal(dados: dict[str, Any]) -> dict[str, Any]:
+    """Calcula o preço necessário para atingir a margem líquida informada."""
+    return calculate_ideal_price(dados)
+
 
 
 def main() -> None:

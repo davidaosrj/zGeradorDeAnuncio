@@ -14,6 +14,7 @@ from .offline import OfflineGenerationError
 from .pipeline import IMAGE_SUFFIXES, generate_advertisement
 from .repository import ProductRepository, ProductRepositoryError
 from .roas import RoasValidationError, calculate_simulation, evaluate_campaign
+from .sale_calculator import calculate_ideal_price, calculate_sale_profit
 
 app = FastAPI(title="Gerador de Anúncios", version="0.2.0")
 STATIC_DIR = Path(__file__).parent / "static"
@@ -31,6 +32,11 @@ def index() -> str:
 @app.get("/roas", response_class=HTMLResponse)
 def roas_page() -> str:
     return (STATIC_DIR / "roas.html").read_text(encoding="utf-8")
+
+
+@app.get("/calculadora-shopee", response_class=HTMLResponse)
+def shopee_calculator_page() -> str:
+    return (STATIC_DIR / "sale-calculator.html").read_text(encoding="utf-8")
 
 
 @app.get("/logo-zonegeeklab3d.png", response_class=FileResponse)
@@ -106,6 +112,18 @@ def simulate_roas(profile: dict) -> dict:
 @app.post("/api/roas/evaluate")
 def evaluate_roas(profile: dict) -> dict:
     try: return evaluate_campaign(profile)
+    except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/calculator/sale-profit")
+def sale_profit(data: dict) -> dict:
+    try: return calculate_sale_profit(data)
+    except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
+
+
+@app.post("/api/calculator/ideal-price")
+def ideal_price(data: dict) -> dict:
+    try: return calculate_ideal_price(data)
     except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
 
 

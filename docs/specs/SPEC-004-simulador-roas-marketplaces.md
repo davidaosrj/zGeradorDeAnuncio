@@ -35,6 +35,14 @@ credito_maximo_seguro = estoque_vendavel × CPA_maximo_seguro
 
 Recebe o mesmo perfil com o objeto `actual`. Retorna métricas realizadas, estado da campanha e sugestões explicáveis.
 
+### `POST /api/calculator/sale-profit`
+
+Calcula quanto sobra por venda, detalhando comissão, tarifa fixa, embalagem, imposto, frete, Ads, custo total, lucro e margem.
+
+### `POST /api/calculator/ideal-price`
+
+Calcula o preço necessário para atingir a margem informada. Ads pode ser ignorado, informado como custo fixo por venda ou derivado de um ROAS esperado.
+
 Valores monetários e razões retornam como strings decimais para evitar perda de precisão. Percentuais de entrada usam a escala de 0 a 100.
 
 ## Entrada
