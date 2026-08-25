@@ -305,7 +305,24 @@ cobertura_estoque_dias =
 
 Se a cobertura for menor que o prazo de reposição somado à margem logística configurada, o sistema alertará risco de ruptura.
 
-## 4.5 Cenários
+## 4.5 Estoque mínimo e compatibilidade com crédito de Ads
+
+Antes de recomendar o uso do crédito planejado, o sistema calculará:
+
+```text
+estoque_minimo_equilibrio =
+    teto(credito_planejado / margem_contribuicao_unitaria)
+
+estoque_minimo_lucro =
+    teto(credito_planejado / CPA_maximo_seguro)
+
+credito_maximo_seguro_estoque =
+    estoque_vendavel × CPA_maximo_seguro
+```
+
+Se o estoque vendável for menor que `estoque_minimo_lucro`, o produto será marcado como incompatível com o crédito planejado. A interface informará as unidades adicionais necessárias e a parte do crédito que não pode ser usada com segurança. Margem ou CPA seguro não positivos também tornam o produto incompatível.
+
+## 4.6 Cenários
 
 O simulador apresentará três cenários:
 
@@ -600,4 +617,3 @@ As fontes foram consultadas em 2026-08-25. Nenhum percentual de taxa foi copiado
 - Uma boa campanha pode acelerar ruptura de estoque.
 
 Esses riscos serão exibidos no frontend e não poderão ser eliminados apenas por cálculo.
-

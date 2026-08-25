@@ -21,12 +21,25 @@ class RoasSimulationTest(unittest.TestCase):
         self.assertEqual(result["economics"]["minimum_safe_roas"], "2.5000")
         self.assertEqual(result["budget"]["recommended_daily"], "10.00")
         self.assertEqual(result["budget"]["limiting_factor"], "credito_por_dia")
+        self.assertEqual(result["inventory"]["minimum_units_break_even"], 6)
+        self.assertEqual(result["inventory"]["minimum_units_safe_profit"], 8)
+        self.assertEqual(result["budget"]["maximum_safe_credit_for_stock"], "3600.00")
+        self.assertEqual(result["budget"]["credit_compatibility"], "COMPATIVEL")
+
+    def test_flags_stock_incompatible_with_ads_credit(self):
+        data = profile(); data["stock"] = {"physical": 5, "reserved": 0, "safety": 0}
+        result = calculate_simulation(data)
+        self.assertEqual(result["budget"]["credit_compatibility"], "INCOMPATIVEL_ESTOQUE")
+        self.assertEqual(result["inventory"]["additional_units_needed"], 3)
+        self.assertEqual(result["budget"]["incompatible_credit_amount"], "100.00")
+        self.assertTrue(any("incompatível" in alert for alert in result["alerts"]))
 
     def test_blocks_non_positive_margin(self):
         data = profile(); data["costs"]["product"] = 100
         result = calculate_simulation(data)
         self.assertFalse(result["safe"])
         self.assertEqual(result["budget"]["recommended_daily"], "0.00")
+        self.assertEqual(result["budget"]["credit_compatibility"], "INCOMPATIVEL_MARGEM")
 
     def test_rejects_bad_percentage(self):
         data = profile(); data["costs"]["tax_pct"] = 101

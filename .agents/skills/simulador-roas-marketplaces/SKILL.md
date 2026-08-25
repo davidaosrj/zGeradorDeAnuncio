@@ -14,6 +14,7 @@ Antes de alterar fórmulas ou recomendações, leia [`docs/adr/ADR-002-simulador
 - Preserve a separação entre receita atribuída e total, conversão por clique e por sessão, dados provisórios e maturados.
 - Não classifique como seguro quando preço, margem ou CPA seguro forem inválidos.
 - Limite orçamento por crédito, caixa e estoque, indicando qual limite determinou o resultado.
+- Calcule estoque mínimo e crédito máximo suportado; sinalize explicitamente incompatibilidade por margem ou estoque.
 - Recomende mudanças somente depois da amostra mínima configurada e nunca altere campanhas externas sem autorização explícita.
 - Use `Decimal` para dinheiro e teste limites, valores nulos e divisão por zero.
 
@@ -26,4 +27,3 @@ Antes de alterar fórmulas ou recomendações, leia [`docs/adr/ADR-002-simulador
 5. Retorne fórmulas, hipóteses, alertas e motivos em estrutura auditável.
 
 Use `/api/roas/simulate`, `/api/roas/evaluate` ou as ferramentas MCP correspondentes.
-

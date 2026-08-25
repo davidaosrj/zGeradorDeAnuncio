@@ -10,6 +10,22 @@ Implementar a [ADR-002](../adr/ADR-002-simulador-roas-seguro-marketplaces.md) no
 
 Recebe o perfil econômico, estoque e campanha. Retorna margem de contribuição, CPA máximo seguro, ROAS/ACOS de equilíbrio, ROAS mínimo seguro e limites de orçamento.
 
+Também retorna:
+
+- estoque mínimo para consumir o crédito planejado no ponto de equilíbrio;
+- estoque mínimo para consumir o crédito preservando a margem líquida desejada;
+- crédito máximo seguro suportado pelo estoque vendável;
+- quantidade adicional necessária;
+- compatibilidade do produto com o crédito: `SEM_CREDITO`, `COMPATIVEL`, `INCOMPATIVEL_ESTOQUE` ou `INCOMPATIVEL_MARGEM`.
+
+O crédito planejado é o menor valor entre o crédito total e `orçamento diário × horizonte`. Quando o orçamento diário for zero, considera-se o crédito total para a análise de compatibilidade.
+
+```text
+estoque_minimo_equilibrio = teto(credito_planejado / margem_contribuicao_unitaria)
+estoque_minimo_lucro = teto(credito_planejado / CPA_maximo_seguro)
+credito_maximo_seguro = estoque_vendavel × CPA_maximo_seguro
+```
+
 ### `POST /api/roas/evaluate`
 
 Recebe o mesmo perfil com o objeto `actual`. Retorna métricas realizadas, estado da campanha e sugestões explicáveis.
@@ -77,7 +93,7 @@ As ferramentas usam o mesmo módulo chamado pela API HTTP e não alteram campanh
 
 - fórmulas de equilíbrio e segurança;
 - limites de crédito e estoque;
+- incompatibilidade do crédito por estoque e por margem;
 - margem negativa e percentuais inválidos;
 - estados sem dados, em aprendizado, prejuízo e saudável;
 - valores nulos, arredondamento e divisão por zero.
-

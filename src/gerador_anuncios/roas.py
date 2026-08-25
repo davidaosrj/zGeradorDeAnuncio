@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from decimal import Decimal, InvalidOperation, ROUND_CEILING, ROUND_HALF_UP
 from typing import Any
 
 ZERO = Decimal("0")
@@ -55,6 +55,10 @@ def _pct(value: Decimal | None) -> str | None:
     return None if value is None else str((value * HUNDRED).quantize(MONEY, rounding=ROUND_HALF_UP))
 
 
+def _whole_units(value: Decimal | None) -> int | None:
+    return None if value is None else int(value.to_integral_value(rounding=ROUND_CEILING))
+
+
 def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
     marketplace = str(profile.get("marketplace", "")).lower()
     if marketplace not in {"shopee", "mercado_livre"}:
@@ -95,6 +99,26 @@ def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
         raise RoasValidationError("campaign.horizon_days deve ser maior que zero")
     credit = _non_negative(campaign.get("credit_total"), "campaign.credit_total")
     desired_budget = _non_negative(campaign.get("desired_daily_budget"), "campaign.desired_daily_budget")
+    planned_credit = min(credit, desired_budget * horizon) if desired_budget > ZERO else credit
+    minimum_units_break_even = _whole_units(
+        planned_credit / contribution if planned_credit > ZERO and contribution > ZERO else None
+    )
+    minimum_units_safe = _whole_units(
+        planned_credit / safe_cpa if planned_credit > ZERO and safe_cpa > ZERO else None
+    )
+    maximum_safe_credit = max(ZERO, sellable * safe_cpa)
+    credit_excess = max(ZERO, planned_credit - maximum_safe_credit)
+    additional_stock_needed = (
+        max(0, minimum_units_safe - int(sellable)) if minimum_units_safe is not None else None
+    )
+    if planned_credit <= ZERO:
+        compatibility_status = "SEM_CREDITO"
+    elif contribution <= ZERO or safe_cpa <= ZERO:
+        compatibility_status = "INCOMPATIVEL_MARGEM"
+    elif sellable < Decimal(minimum_units_safe or 0):
+        compatibility_status = "INCOMPATIVEL_ESTOQUE"
+    else:
+        compatibility_status = "COMPATIVEL"
     limits: dict[str, Decimal] = {
         "orcamento_desejado": desired_budget,
         "credito_por_dia": credit / horizon,
@@ -115,6 +139,12 @@ def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
         alerts.append("A margem líquida desejada consome toda a verba disponível para aquisição.")
     if sellable <= ZERO:
         alerts.append("Não há estoque vendável para anunciar.")
+    if compatibility_status == "INCOMPATIVEL_MARGEM":
+        alerts.append("Produto incompatível com crédito de Ads: a margem não suporta publicidade com o lucro mínimo escolhido.")
+    elif compatibility_status == "INCOMPATIVEL_ESTOQUE":
+        alerts.append(
+            f"Produto incompatível com o crédito planejado: faltam {additional_stock_needed} unidades vendáveis para preservar a margem desejada."
+        )
     if not safe:
         recommended_budget, recommended_name = ZERO, "bloqueio_seguranca"
 
@@ -127,11 +157,20 @@ def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
             "maximum_safe_cpa": _money(max(ZERO, safe_cpa)), "break_even_acos_pct": _pct(break_even_acos),
             "break_even_roas": _ratio(break_even_roas), "minimum_safe_roas": _ratio(safe_roas),
         },
-        "inventory": {"sellable_units": _money(sellable)},
+        "inventory": {
+            "sellable_units": _money(sellable),
+            "minimum_units_break_even": minimum_units_break_even,
+            "minimum_units_safe_profit": minimum_units_safe,
+            "additional_units_needed": additional_stock_needed,
+        },
         "budget": {
             "recommended_daily": _money(recommended_budget), "limiting_factor": recommended_name,
             "limits": {name: _money(value) for name, value in limits.items()},
             "estimated_credit_days": _ratio(credit / recommended_budget if recommended_budget > ZERO else None),
+            "planned_credit": _money(planned_credit),
+            "maximum_safe_credit_for_stock": _money(maximum_safe_credit),
+            "incompatible_credit_amount": _money(credit_excess),
+            "credit_compatibility": compatibility_status,
         },
         "alerts": alerts, "formula_version": "1.0.0",
     }
@@ -182,4 +221,3 @@ def evaluate_campaign(profile: dict[str, Any]) -> dict[str, Any]:
         "session_conversion_pct": _pct(session_conversion), "attributed_result": _money(result),
         "data_matured": matured,
     }}
-
