@@ -25,6 +25,9 @@ class RoasSimulationTest(unittest.TestCase):
         self.assertEqual(result["inventory"]["minimum_units_safe_profit"], 8)
         self.assertEqual(result["budget"]["maximum_safe_credit_for_stock"], "3600.00")
         self.assertEqual(result["budget"]["credit_compatibility"], "COMPATIVEL")
+        self.assertEqual(result["profit"]["protected_per_unit"], "10.00")
+        self.assertEqual(result["profit"]["projected_units_for_credit"], 8)
+        self.assertEqual(result["profit"]["projected_after_ads"], "100.00")
 
     def test_flags_stock_incompatible_with_ads_credit(self):
         data = profile(); data["stock"] = {"physical": 5, "reserved": 0, "safety": 0}
@@ -32,6 +35,7 @@ class RoasSimulationTest(unittest.TestCase):
         self.assertEqual(result["budget"]["credit_compatibility"], "INCOMPATIVEL_ESTOQUE")
         self.assertEqual(result["inventory"]["additional_units_needed"], 3)
         self.assertEqual(result["budget"]["incompatible_credit_amount"], "100.00")
+        self.assertIsNone(result["profit"]["projected_after_ads"])
         self.assertTrue(any("incompatível" in alert for alert in result["alerts"]))
 
     def test_blocks_non_positive_margin(self):

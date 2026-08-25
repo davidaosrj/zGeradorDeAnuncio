@@ -17,6 +17,11 @@ Também retorna:
 - crédito máximo seguro suportado pelo estoque vendável;
 - quantidade adicional necessária;
 - compatibilidade do produto com o crédito: `SEM_CREDITO`, `COMPATIVEL`, `INCOMPATIVEL_ESTOQUE` ou `INCOMPATIVEL_MARGEM`.
+- lucro protegido por unidade em reais;
+- lucro projetado após Ads para as unidades mínimas do cenário seguro;
+- resultado potencial caso todo o estoque vendável seja vendido após consumir o crédito planejado.
+
+Os valores projetados devem ser identificados como cenários matemáticos, sem promessa de vendas.
 
 O crédito planejado é o menor valor entre o crédito total e `orçamento diário × horizonte`. Quando o orçamento diário for zero, considera-se o crédito total para a análise de compatibilidade.
 

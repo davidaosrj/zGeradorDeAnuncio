@@ -51,12 +51,17 @@
     if (compatibility === "INCOMPATIVEL_MARGEM") alerts.push("Produto incompatível com crédito de Ads: a margem não suporta publicidade.");
     if (compatibility === "INCOMPATIVEL_ESTOQUE") alerts.push(`Produto incompatível com o crédito: faltam ${Math.max(0, minSafe - Math.floor(sellable))} unidades vendáveis.`);
     if (!safe) { recommended = 0; limitingFactor = "bloqueio_seguranca"; }
+    const projectedProfit = minSafe != null && compatibility === "COMPATIVEL" ? minSafe * contribution - planned : null;
     return {
       safe, economics: {price: money(price), contribution_margin: money(contribution), contribution_margin_pct: pct(contribution / price),
         maximum_safe_cpa: money(Math.max(0, safeCpa)), break_even_roas: contribution > 0 ? ratio(price / contribution) : null,
         minimum_safe_roas: safeCpa > 0 ? ratio(price / safeCpa) : null},
       inventory: {sellable_units: money(sellable), minimum_units_break_even: minBreakEven, minimum_units_safe_profit: minSafe,
         additional_units_needed: minSafe == null ? null : Math.max(0, minSafe - Math.floor(sellable))},
+      profit: {protected_per_unit: money(price * desiredMargin), projected_units_for_credit: minSafe,
+        projected_after_ads: projectedProfit == null ? null : money(projectedProfit),
+        result_if_all_sellable_stock_is_sold: money(sellable * contribution - planned),
+        projection_notice: "Cenário matemático; não garante vendas nem desempenho da campanha."},
       budget: {recommended_daily: money(recommended), limiting_factor: limitingFactor, planned_credit: money(planned),
         maximum_safe_credit_for_stock: money(maxSafeCredit), incompatible_credit_amount: money(Math.max(0, planned - maxSafeCredit)),
         credit_compatibility: compatibility}, alerts
@@ -87,4 +92,3 @@
       session_conversion_pct: pct(sessions > 0 ? totalOrders / sessions : null)}};
   };
 }());
-

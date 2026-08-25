@@ -119,6 +119,12 @@ def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
         compatibility_status = "INCOMPATIVEL_ESTOQUE"
     else:
         compatibility_status = "COMPATIVEL"
+    projected_profit = (
+        Decimal(minimum_units_safe) * contribution - planned_credit
+        if minimum_units_safe is not None and compatibility_status == "COMPATIVEL"
+        else None
+    )
+    stock_result_after_ads = sellable * contribution - planned_credit
     limits: dict[str, Decimal] = {
         "orcamento_desejado": desired_budget,
         "credito_por_dia": credit / horizon,
@@ -162,6 +168,13 @@ def calculate_simulation(profile: dict[str, Any]) -> dict[str, Any]:
             "minimum_units_break_even": minimum_units_break_even,
             "minimum_units_safe_profit": minimum_units_safe,
             "additional_units_needed": additional_stock_needed,
+        },
+        "profit": {
+            "protected_per_unit": _money(reserved_profit),
+            "projected_units_for_credit": minimum_units_safe,
+            "projected_after_ads": None if projected_profit is None else _money(projected_profit),
+            "result_if_all_sellable_stock_is_sold": _money(stock_result_after_ads),
+            "projection_notice": "Cenário matemático; não garante vendas nem desempenho da campanha.",
         },
         "budget": {
             "recommended_daily": _money(recommended_budget), "limiting_factor": recommended_name,
