@@ -29,4 +29,4 @@ gerador-mcp = "gerador_anuncios.mcp_server:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-gerador_anuncios = ["static/*.html"]
+gerador_anuncios = ["static/*"]

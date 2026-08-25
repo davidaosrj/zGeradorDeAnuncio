@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import List
 
@@ -42,6 +43,16 @@ def shopee_calculator_page() -> str:
 @app.get("/calculadora-mercado-livre", response_class=HTMLResponse)
 def mercado_livre_calculator_page() -> str:
     return (STATIC_DIR / "mercado-livre-calculator.html").read_text(encoding="utf-8")
+
+
+@app.get("/calculadora-marketplaces", response_class=HTMLResponse)
+def marketplace_calculator_page() -> str:
+    return (STATIC_DIR / "marketplace-calculator.html").read_text(encoding="utf-8")
+
+
+@app.get("/marketplace-admin.js", response_class=FileResponse)
+def marketplace_admin_script() -> FileResponse:
+    return FileResponse(STATIC_DIR / "marketplace-admin.js", media_type="application/javascript")
 
 
 @app.get("/logo-zonegeeklab3d.png", response_class=FileResponse)
@@ -90,13 +101,27 @@ async def create_product(
 
 
 @app.post("/api/products/{sku}/generate")
-async def generate(sku: str, mode: str = "auto") -> dict:
+async def generate(sku: str, mode: str = "auto", output_path: str | None = None) -> dict:
     if mode not in {"auto", "offline", "online"}:
         raise HTTPException(400, "Modo inválido")
     repo = ProductRepository()
     try:
         target = repo.product_dir(sku)
-        output = await run_in_threadpool(generate_advertisement, target, mode=mode)
+        custom_output = None
+        if output_path and output_path.strip():
+            requested = Path(output_path.strip()).expanduser()
+            if requested.is_absolute():
+                if os.getenv("ALLOW_ABSOLUTE_OUTPUT_PATHS", "").lower() not in {"1", "true", "yes"}:
+                    raise ProductRepositoryError(
+                        "Caminho absoluto bloqueado. Inicie com ALLOW_ABSOLUTE_OUTPUT_PATHS=true ou use uma subpasta relativa."
+                    )
+                custom_output = requested
+            else:
+                custom_output = (target / requested).resolve()
+                product_root = target.resolve()
+                if custom_output != product_root and product_root not in custom_output.parents:
+                    raise ProductRepositoryError("A subpasta de saída não pode sair do diretório do produto")
+        output = await run_in_threadpool(generate_advertisement, target, mode=mode, output_path=custom_output)
         return {"ok": True, "output": str(output), "status": repo.status(sku)}
     except (ProductRepositoryError, OfflineGenerationError, OSError) as exc:
         raise HTTPException(400, str(exc)) from exc
