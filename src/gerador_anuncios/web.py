@@ -39,6 +39,11 @@ def shopee_calculator_page() -> str:
     return (STATIC_DIR / "sale-calculator.html").read_text(encoding="utf-8")
 
 
+@app.get("/calculadora-mercado-livre", response_class=HTMLResponse)
+def mercado_livre_calculator_page() -> str:
+    return (STATIC_DIR / "mercado-livre-calculator.html").read_text(encoding="utf-8")
+
+
 @app.get("/logo-zonegeeklab3d.png", response_class=FileResponse)
 def brand_logo() -> Path:
     return STATIC_DIR / "logo-zonegeeklab3d.png"

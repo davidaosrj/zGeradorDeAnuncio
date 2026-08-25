@@ -43,6 +43,10 @@ Calcula quanto sobra por venda, detalhando comissão, tarifa fixa, embalagem, im
 
 Calcula o preço necessário para atingir a margem informada. Ads pode ser ignorado, informado como custo fixo por venda ou derivado de um ROAS esperado.
 
+## Calculadora Mercado Livre
+
+A página `/calculadora-mercado-livre` oferece os mesmos modos de lucro e preço ideal, com seleção de anúncio Clássico ou Premium, comissões configuráveis, peso informativo, custo de envio, tarifa fixa e Mercado Ads. O sistema não embute tabela de frete ou comissão como regra permanente.
+
 Valores monetários e razões retornam como strings decimais para evitar perda de precisão. Percentuais de entrada usam a escala de 0 a 100.
 
 ## Entrada
