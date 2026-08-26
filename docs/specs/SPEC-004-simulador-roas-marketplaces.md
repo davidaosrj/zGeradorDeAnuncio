@@ -49,6 +49,8 @@ A página `/calculadora-mercado-livre` oferece os modos de margem e preço ideal
 
 O custo operacional é escolhido automaticamente por uma matriz de 30 faixas de peso e 8 faixas de preço reproduzida da referência indicada pelo usuário em 25/08/2026. A interface identifica a origem e a data, alerta que os valores devem ser confirmados na conta do vendedor e não trata as comissões iniciais como universais. No preço ideal, a fórmula itera até estabilizar a faixa de custo correspondente ao preço calculado.
 
+Os campos de comissão iniciam preenchidos com 12% para anúncio Clássico e 17% para Premium, seguindo a referência informada. Configurações antigas vazias ou zeradas recebem novamente esses valores iniciais; o vendedor pode editá-los e deve confirmar a comissão aplicável à sua categoria e conta.
+
 ## Calculadora unificada e administração
 
 A página `/calculadora-marketplaces` calcula lucro e preço ideal para Shopee, Mercado Livre, Magalu e Amazon. O menu Administração mantém comissão, taxa de pagamento, tarifa fixa, impostos, embalagem, logística, margem e data de revisão por plataforma no `localStorage`, com exportação e importação JSON.

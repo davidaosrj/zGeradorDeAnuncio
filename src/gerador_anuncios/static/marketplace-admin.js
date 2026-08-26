@@ -1,13 +1,13 @@
 const STORAGE_KEY = "zonegeeklab3d-marketplace-profiles-v1";
 const platformNames = {shopee:"Shopee",mercado_livre:"Mercado Livre",magalu:"Magalu",amazon:"Amazon"};
 const shopeeTiers = [{max:79.99,commission_pct:20,fixed_fee:4},{max:99.99,commission_pct:14,fixed_fee:16},{max:199.99,commission_pct:14,fixed_fee:20},{max:null,commission_pct:14,fixed_fee:26}];
-const blankProfile = (key,name) => ({name,commission_pct:0,payment_pct:0,fixed_fee:0,tax_pct:0,packaging:0,shipping:0,target_margin_pct:20,reviewed_at:key==="shopee"?"2026-08-25":"",tiers:key==="shopee"?shopeeTiers.map(t=>({...t})):null,cpf_high_volume_fee:key==="shopee"?3:0,source:key==="shopee"?"sobraquanto.com.br — regras indicadas como vigentes desde 01/03/2026":""});
+const blankProfile = (key,name) => ({name,commission_pct:key==="mercado_livre"?12:0,payment_pct:0,fixed_fee:0,tax_pct:0,packaging:0,shipping:0,target_margin_pct:20,reviewed_at:key==="shopee"?"2026-08-25":"",tiers:key==="shopee"?shopeeTiers.map(t=>({...t})):null,cpf_high_volume_fee:key==="shopee"?3:0,source:key==="shopee"?"sobraquanto.com.br — regras indicadas como vigentes desde 01/03/2026":key==="mercado_livre"?"Valor inicial editável baseado na referência informada; confirme a comissão da sua categoria":""});
 let profiles = loadProfiles();
 let calculationMode = "profit";
 let reactiveTimer;
 
 function defaults(){return Object.fromEntries(Object.entries(platformNames).map(([key,name])=>[key,blankProfile(key,name)]))}
-function loadProfiles(){const base=defaults();try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&typeof saved==="object"){for(const key of Object.keys(base))base[key]={...base[key],...(saved[key]||{})};return base}}catch{}return base}
+function loadProfiles(){const base=defaults();try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&typeof saved==="object"){for(const key of Object.keys(base))base[key]={...base[key],...(saved[key]||{})};if(base.mercado_livre.commission_pct===0&&!base.mercado_livre.reviewed_at)base.mercado_livre.commission_pct=12;return base}}catch{}return base}
 function saveProfiles(){localStorage.setItem(STORAGE_KEY,JSON.stringify(profiles));renderAdmin();loadPlatform();scheduleCalculation();flash("Configurações salvas neste navegador.")}
 function number(value,name){const result=Number(value||0);if(!Number.isFinite(result)||result<0)throw Error(`${name} deve ser zero ou positivo`);return result}
 function percent(value,name){const result=number(value,name);if(result>100)throw Error(`${name} deve estar entre 0 e 100`);return result/100}
