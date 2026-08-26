@@ -45,7 +45,9 @@ Calcula o preço necessário para atingir a margem informada. Ads pode ser ignor
 
 ## Calculadora Mercado Livre
 
-A página `/calculadora-mercado-livre` oferece os mesmos modos de lucro e preço ideal, com seleção de anúncio Clássico ou Premium, comissões configuráveis, peso informativo, custo de envio, tarifa fixa e Mercado Ads. O sistema não embute tabela de frete ou comissão como regra permanente.
+A página `/calculadora-mercado-livre` oferece os modos de margem e preço ideal, seleção de anúncio Clássico, Premium ou comparação simultânea, comissões configuráveis, impostos, embalagem e Mercado Ads fixo ou calculado por ROAS. As configurações podem ser persistidas no navegador e qualquer alteração recalcula um resultado já exibido.
+
+O custo operacional é escolhido automaticamente por uma matriz de 30 faixas de peso e 8 faixas de preço reproduzida da referência indicada pelo usuário em 25/08/2026. A interface identifica a origem e a data, alerta que os valores devem ser confirmados na conta do vendedor e não trata as comissões iniciais como universais. No preço ideal, a fórmula itera até estabilizar a faixa de custo correspondente ao preço calculado.
 
 ## Calculadora unificada e administração
 

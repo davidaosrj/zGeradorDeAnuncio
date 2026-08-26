@@ -81,6 +81,11 @@ def marketplace_admin_script() -> FileResponse:
     return FileResponse(STATIC_DIR / "marketplace-admin.js", media_type="application/javascript")
 
 
+@app.get("/mercado-livre-calculator.js", response_class=FileResponse)
+def mercado_livre_calculator_script() -> FileResponse:
+    return FileResponse(STATIC_DIR / "mercado-livre-calculator.js", media_type="application/javascript")
+
+
 @app.get("/logo-zonegeeklab3d.png", response_class=FileResponse)
 def brand_logo() -> Path:
     return STATIC_DIR / "logo-zonegeeklab3d.png"
