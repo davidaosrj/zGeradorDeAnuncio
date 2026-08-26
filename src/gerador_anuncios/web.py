@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import zipfile
 from pathlib import Path
 from typing import List, Optional
 
@@ -13,7 +14,7 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from .offline import OfflineGenerationError
 from .pipeline import IMAGE_SUFFIXES, generate_advertisement
-from .repository import ProductRepository, ProductRepositoryError
+from .repository import ProductRepository, ProductRepositoryError, normalize_sku
 from .roas import RoasValidationError, calculate_simulation, evaluate_campaign
 from .sale_calculator import calculate_ideal_price, calculate_sale_profit
 
@@ -182,6 +183,25 @@ async def generate(sku: str, mode: str = "auto", output_path: Optional[str] = No
         output = await run_in_threadpool(generate_advertisement, target, mode=mode, output_path=custom_output)
         return {"ok": True, "output": str(output), "status": repo.status(sku)}
     except (ProductRepositoryError, OfflineGenerationError, OSError) as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+
+@app.get("/api/products/{sku}/download", response_class=FileResponse)
+def download_generated_advertisement(sku: str) -> FileResponse:
+    """Empacota a saída completa para o navegador salvar onde o usuário escolher."""
+    try:
+        repo = ProductRepository()
+        target = repo.product_dir(sku)
+        output = target / "saida"
+        if not output.is_dir():
+            raise ProductRepositoryError("Gere o anúncio antes de baixar o resultado")
+        archive = target / f"{normalize_sku(sku)}_Anuncio_Completo.zip"
+        with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
+            for item in sorted(output.rglob("*")):
+                if item.is_file():
+                    bundle.write(item, item.relative_to(output))
+        return FileResponse(archive, media_type="application/zip", filename=archive.name)
+    except (ProductRepositoryError, OSError) as exc:
         raise HTTPException(400, str(exc)) from exc
 
 

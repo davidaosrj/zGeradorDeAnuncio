@@ -51,6 +51,10 @@ anuncio-offline /caminho/do/produto
 
 Use `--output` para escolher outro diretório de saída.
 
+## Saída pelo navegador
+
+No frontend web, o servidor gera a saída em sua área temporária e disponibiliza `GET /api/products/{sku}/download`, que reúne textos, imagens, logs e pacotes em `{sku}_Anuncio_Completo.zip`. Em navegadores compatíveis com a File System Access API, o usuário escolhe diretamente a pasta local e concede permissão de gravação. Nos demais navegadores, o ZIP utiliza o download padrão. O servidor nunca recebe nem tenta listar o caminho local escolhido pelo navegador.
+
 ## Critérios de aceite
 
 - Funciona com a rede indisponível.
