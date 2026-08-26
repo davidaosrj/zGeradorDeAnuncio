@@ -35,6 +35,18 @@ def _inside(path: Path, roots: list[Path]) -> bool:
     return any(path == root or root in path.parents for root in roots)
 
 
+def _listable_directory(path: Path, roots: list[Path]) -> bool:
+    """Confirma que a pasta pode ser aberta e não escapa por link simbólico."""
+    try:
+        resolved = path.resolve()
+        if not _inside(resolved, roots) or not resolved.is_dir():
+            return False
+        with os.scandir(resolved):
+            return True
+    except OSError:
+        return False
+
+
 def _csv(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
@@ -90,8 +102,15 @@ def output_directories(path: Optional[str] = None) -> dict:
     if not _inside(current, roots) or not current.is_dir():
         raise HTTPException(400, "Diretório fora das raízes autorizadas ou inexistente")
     try:
-        directories = sorted((item for item in current.iterdir() if item.is_dir() and not item.name.startswith(".")), key=lambda item: item.name.lower())
-    except PermissionError as exc:
+        directories = sorted(
+            (
+                item
+                for item in current.iterdir()
+                if not item.name.startswith(".") and _listable_directory(item, roots)
+            ),
+            key=lambda item: item.name.lower(),
+        )
+    except OSError as exc:
         raise HTTPException(403, "Sem permissão para listar este diretório") from exc
     parent = current.parent if current.parent != current and _inside(current.parent, roots) else None
     return {"current": str(current), "parent": str(parent) if parent else None, "directories": [{"name": item.name, "path": str(item.resolve())} for item in directories], "roots": [str(root) for root in roots]}
@@ -147,7 +166,9 @@ async def generate(sku: str, mode: str = "auto", output_path: Optional[str] = No
                     raise ProductRepositoryError(
                         "Caminho absoluto bloqueado. Inicie com ALLOW_ABSOLUTE_OUTPUT_PATHS=true ou use uma subpasta relativa."
                     )
-                custom_output = requested
+                custom_output = requested.resolve()
+                if not _inside(custom_output, _output_browser_roots()):
+                    raise ProductRepositoryError("Diretório de saída fora das raízes autorizadas")
             else:
                 custom_output = (target / requested).resolve()
                 product_root = target.resolve()
