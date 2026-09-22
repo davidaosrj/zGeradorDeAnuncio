@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import colorsys
 import json
 import re
 import zipfile
@@ -19,7 +20,17 @@ COLOR_RGB = {
     "vermelho": (220, 35, 35), "vermelha": (220, 35, 35),
     "laranja": (245, 115, 20), "verde": (35, 170, 85),
     "azul": (35, 105, 210), "preto": (25, 25, 25), "branco": (235, 235, 235),
+    "rosa": (225, 110, 145),
 }
+# Matiz alvo (graus, 0-360) para cores cromáticas. Comparar por matiz, e não pela
+# média RGB da foto inteira, evita confundir cores próximas (ex.: vermelho x laranja)
+# quando o fundo claro e as sombras da foto diluem a cor média do produto.
+COLOR_HUE = {
+    "vermelho": 358, "vermelha": 358, "laranja": 28, "amarelo": 50,
+    "verde": 130, "azul": 215, "roxo": 275, "rosa": 340,
+}
+# Cores acromáticas (preto/branco) não têm matiz: comparar por luminosidade média.
+COLOR_LIGHTNESS = {"preto": 25, "branco": 235}
 
 
 def _font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont:
@@ -48,18 +59,41 @@ def _images(root: Path) -> list[Path]:
     return sorted(set(candidates))
 
 
-def _color_score(path: Path, rgb: tuple[int, int, int]) -> float:
+def _hue_distance(a: float, b: float) -> float:
+    d = abs(a - b) % 360
+    return min(d, 360 - d)
+
+
+def _dominant_hue(pixels: list[tuple[int, int, int]]) -> float | None:
+    vivid = [p for p in pixels if (max(p) - min(p)) >= 40 and max(p) >= 90]
+    if not vivid:
+        return None
+    hues = sorted(colorsys.rgb_to_hsv(p[0] / 255, p[1] / 255, p[2] / 255)[0] * 360 for p in vivid)
+    return hues[len(hues) // 2]
+
+
+def _color_score(path: Path, color: str) -> float:
     try:
-        im = Image.open(path).convert("RGB").resize((96, 96))
+        im = Image.open(path).convert("RGB").resize((160, 160))
         pixels = list(im.getdata())
     except OSError:
-        return -1
-    return sum(max(0, 150 - sum(abs(p[i] - rgb[i]) for i in range(3))) for p in pixels) / len(pixels)
+        return -1_000
+    name = color.lower()
+    if name in COLOR_LIGHTNESS:
+        avg = sum(sum(p) / 3 for p in pixels) / len(pixels)
+        return -abs(avg - COLOR_LIGHTNESS[name])
+    hue = COLOR_HUE.get(name)
+    if hue is None:
+        return 0.0
+    dominant = _dominant_hue(pixels)
+    return -_hue_distance(dominant, hue) if dominant is not None else -1_000
 
 
 def _select_image(paths: list[Path], color: str) -> Path:
-    target = COLOR_RGB.get(color.lower())
-    return max(paths, key=lambda p: _color_score(p, target)) if target else paths[0]
+    name = color.lower()
+    if name not in COLOR_HUE and name not in COLOR_LIGHTNESS:
+        return paths[0]
+    return max(paths, key=lambda p: _color_score(p, color))
 
 
 def _photo_panel(source: Path, size: tuple[int, int]) -> Image.Image:
