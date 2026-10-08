@@ -1,4 +1,4 @@
-# ADR-002 — Simulador de ROAS Seguro para Shopee e Mercado Livre
+# ADR-004 — Simulador de ROAS Seguro para Shopee e Mercado Livre
 
 ## Status
 

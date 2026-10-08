@@ -1,0 +1,78 @@
+const assert = require('node:assert/strict');
+const http = require('node:http');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const {chromium} = require('playwright');
+const root = path.resolve(__dirname, '../../site');
+const server = http.createServer(async (req, res) => {
+  try {
+    const route = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
+    let file = path.resolve(root, '.' + route);
+    if (!file.startsWith(root + path.sep) && file !== root) throw Error('Outside site');
+    if ((await fs.stat(file)).isDirectory()) file = path.join(file, 'index.html');
+    res.setHeader('Content-Type', file.endsWith('.js') ? 'application/javascript' : file.endsWith('.png') ? 'image/png' : 'text/html; charset=utf-8');
+    res.end(await fs.readFile(file));
+  } catch (_) { res.writeHead(404); res.end('Not found'); }
+});
+(async () => {
+  let browser;
+  const errors = [];
+  try {
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    browser = await chromium.launch({headless: true});
+    const page = await browser.newPage();
+    page.on('pageerror', e => errors.push(e.message));
+    const base = `http://127.0.0.1:${server.address().port}`;
+    await page.goto(base);
+    await page.getByRole('link', {name: 'Precificação de impressão 3D'}).click();
+    await page.locator('#components fieldset').waitFor();
+    await page.getByRole('button', {name: 'Carregar exemplo da ADR-002'}).click();
+    assert.equal(await page.locator('#pricing-form > section input[name=name]').first().inputValue(), 'Dinossauro articulado — exemplo ADR-002');
+    await page.getByRole('button', {name: 'Calcular preço e lucro'}).click();
+    await page.waitForFunction(() => document.querySelector('#message').textContent.includes('concluído e salvo'));
+    assert.match(await page.locator('#metrics').innerText(), /R\$ 46,37/);
+    assert.match(await page.locator('#metrics').innerText(), /30\.00%/);
+    await page.reload();
+    await page.getByRole('button', {name: 'Ver resultado'}).first().click();
+    assert.match(await page.locator('#metrics').innerText(), /R\$ 46,37/);
+    await page.getByRole('button', {name: 'Reabrir cenário'}).first().click();
+    await page.getByRole('button', {name: 'Adicionar componente'}).click();
+    await page.locator('#components fieldset').nth(1).locator('[name=quantity]').fill('2');
+    await page.getByRole('button', {name: 'Calcular preço e lucro'}).click();
+    await page.waitForFunction(() => document.querySelector('#metrics').textContent.includes('105,11'));
+    await page.locator('[name=target_margin_pct]').fill('80');
+    await page.getByRole('button', {name: 'Calcular preço e lucro'}).click();
+    await page.waitForFunction(() => document.querySelector('#message').classList.contains('error'));
+    assert.match(await page.locator('#message').innerText(), /menos de 100%/);
+    await page.locator('[name=marketplace]').first().selectOption('mercado_livre');
+    assert.equal(await page.locator('[name=commission_pct]').inputValue(), '0');
+    await page.locator('[name=target_margin_pct]').fill('30');
+    await page.getByText('Materiais', {exact: true}).click();
+    await page.locator('#material-form [name=name]').fill('PLA salvo');
+    await page.getByRole('button', {name: 'Salvar material', exact: true}).click();
+    await page.waitForFunction(() => document.querySelector('#material-list').textContent.includes('PLA salvo'));
+    const materialOption = await page.locator('[data-catalog=materials]').first().locator('option').nth(1).getAttribute('value');
+    await page.locator('[data-catalog=materials]').first().selectOption(materialOption);
+    assert.equal(await page.locator('#components [name=filament_price_kg]').first().inputValue(), '120');
+    await page.getByRole('button', {name: 'Adicionar concorrente'}).click();
+    await page.locator('#competitors [name=name]').fill('<img src=x onerror=alert(1)>');
+    await page.locator('#competitors [name=url]').fill('https://example.com/product');
+    await page.locator('#competitors [name=price]').fill('200');
+    await page.getByRole('button', {name: 'Calcular preço e lucro'}).click();
+    await page.waitForFunction(() => document.querySelector('#comparisons').textContent.includes('<img'));
+    assert.equal(await page.locator('#comparisons img').count(), 0);
+    const snapshot = await page.evaluate(() => JSON.parse(localStorage.getItem('zonegeeklab3d-pricing-v1')).history[0].data.snapshot);
+    assert.equal(snapshot.name, 'Dinossauro articulado — exemplo ADR-002');
+    assert.equal(snapshot.competitors[0].name, '<img src=x onerror=alert(1)>');
+    await page.setViewportSize({width: 390, height: 844});
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+    const download = page.waitForEvent('download');
+    await page.getByRole('button', {name: 'Exportar histórico'}).click();
+    assert.equal((await download).suggestedFilename(), 'historico-impressao-3d.json');
+    assert.deepEqual(errors, []);
+    console.log('Browser OK: navegação, exemplo, kit, erro, catálogos, histórico, exportação, XSS e layout móvel.');
+  } finally {
+    if (browser) await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  }
+})().catch(error => { console.error(error); process.exitCode = 1; });
