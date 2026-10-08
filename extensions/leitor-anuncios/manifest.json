@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Leitor de anúncios — zonegeeklab3D",
+  "version": "1.0.0",
+  "description": "Preenche a comparação da calculadora lendo anúncios abertos da Shopee e do Mercado Livre.",
+  "permissions": ["scripting"],
+  "host_permissions": [
+    "https://*.shopee.com.br/*", "https://shope.ee/*",
+    "https://*.mercadolivre.com.br/*", "https://*.mercadolivre.com/*", "https://*.mercadolibre.com/*"
+  ],
+  "background": {"service_worker": "background.js"},
+  "content_scripts": [{
+    "matches": [
+      "https://davidaosrj.github.io/zGeradorDeAnuncio/*",
+      "http://localhost:8000/impressao-3d*", "http://127.0.0.1:8000/impressao-3d*"
+    ],
+    "js": ["bridge.js"],
+    "run_at": "document_idle",
+    "all_frames": false
+  }]
+}

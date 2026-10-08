@@ -252,6 +252,16 @@ def pricing_ui_script() -> FileResponse:
     return FileResponse(STATIC_DIR / "pricing-ui.js", media_type="application/javascript")
 
 
+@app.get("/listing-reader.js", response_class=FileResponse)
+def listing_reader_script() -> FileResponse:
+    return FileResponse(STATIC_DIR / "listing-reader.js", media_type="application/javascript")
+
+
+@app.get("/leitor-anuncios.zip", response_class=FileResponse)
+def listing_reader_download() -> FileResponse:
+    return FileResponse(STATIC_DIR / "leitor-anuncios.zip", media_type="application/zip", filename="leitor-anuncios.zip")
+
+
 @app.post("/api/pricing/calculate")
 def pricing_calculate(data: dict) -> dict:
     try:

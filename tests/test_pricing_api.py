@@ -49,10 +49,13 @@ class PricingApiTest(unittest.TestCase):
         self.assertEqual(self.client.get('/api/pricing/catalogs/unknown').status_code, 404)
         self.assertEqual(self.client.post('/api/pricing/catalogs/printers', json={'name': 'Bad', 'machine_hour': -1}).status_code, 422)
         self.assertEqual(self.client.get('/impressao-3d').status_code, 200)
-        for path in ['/pricing-ui.js', '/pricing-engine.js']:
+        for path in ['/pricing-ui.js', '/pricing-engine.js', '/listing-reader.js']:
             response = self.client.get(path)
             self.assertEqual(response.status_code, 200)
             self.assertIn('application/javascript', response.headers['content-type'])
+        archive = self.client.get('/leitor-anuncios.zip')
+        self.assertEqual(archive.status_code, 200)
+        self.assertEqual(archive.content[:2], b'PK')
 
 
 if __name__ == '__main__': unittest.main()

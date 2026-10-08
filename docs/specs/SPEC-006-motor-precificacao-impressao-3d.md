@@ -35,7 +35,7 @@ A regra é selecionada explicitamente pelo operador para o canal, categoria, tip
 
 ## Concorrência e rastreabilidade
 
-`competitors[]` guarda nome, categoria, marketplace, `url`, `collected_at`, `price` do pedido equivalente, frete ao comprador, desconto exibido, vendas acumuladas, peso e dimensões. Frete e desconto do concorrente são metadados; o operador informa em `price` o preço bruto comparável. Não inferir vendas por período nem importar anúncios automaticamente.
+`competitors[]` guarda nome, categoria, marketplace, `url`, `collected_at`, `price` do pedido equivalente, frete ao comprador, desconto exibido, vendas acumuladas, peso e dimensões. Frete e desconto do concorrente são metadados; o operador informa em `price` o preço bruto comparável. Não inferir vendas por período. A importação de dados públicos pelo navegador segue a SPEC-008; o motor financeiro continua independente da coleta.
 
 Ao igualar o preço: lucro <= 0 → Inviável; lucro positivo e margem inferior à desejada → Moderada; margem >= desejada → Alta. Fonte HTTP(S), data e preço ausentes ou preço fora da faixa → Indeterminada. Comparações preservam a observação original.
 

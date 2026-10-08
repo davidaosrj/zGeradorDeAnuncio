@@ -529,3 +529,7 @@ A solicitação de implementação aprovou esta decisão. Os contratos e critér
 A aplicação local usa motor Python com `Decimal`, API independente e SQLite. Para o site GitHub Pages já utilizado pelo projeto, existe também motor no navegador com aritmética racional exata `BigInt`, submetido a testes de paridade. Esta é uma adaptação explícita da diretriz de cálculos exclusivamente no backend: o modo estático não depende de servidor e persiste no navegador, com exportação para backup.
 
 A primeira versão seleciona regras comerciais explicitamente e valida faixa/vigência, sem consultar taxas externas. O passo de arredondamento comercial é configurável; o exemplo de R$ 46,90 continua sendo escolha comercial, não uma terminação obrigatória. Histórico e revisões preservam parâmetros utilizados.
+
+## 16. Preenchimento por link no navegador
+
+A [SPEC-008](../specs/SPEC-008-preenchimento-automatico-concorrentes.md) adiciona leitura automática de dados disponíveis de anúncios Shopee/Mercado Livre por extensão do navegador, compatível com GitHub Pages. A extensão é instalada pelo operador e não requer senhas no aplicativo. Confirmações de login, bloqueios e variações permanecem explícitos; o motor calcula apenas com os dados efetivamente preenchidos. Integrações diretas com APIs externas continuam uma evolução distinta.

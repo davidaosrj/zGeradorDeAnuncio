@@ -82,7 +82,9 @@
     urlInput.placeholder = 'https://shopee.com.br/... ou https://produto.mercadolivre.com.br/...';
     const linkActions = node('div', undefined, box); linkActions.className = 'actions';
     const open = node('a', 'Abrir anúncio para conferir', linkActions); open.className = 'button secondary'; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.hidden = true;
-    const note = node('p', 'Cole o link, confira a variação e informe o preço do mesmo produto ou kit.', box); note.setAttribute('role', 'status');
+    const lookup = node('button', 'Preencher pelo link', linkActions); lookup.type = 'button';
+    const focus = node('button', 'Concluir acesso no anúncio', linkActions); focus.type = 'button'; focus.className = 'secondary'; focus.hidden = true;
+    const note = node('p', 'Cole o link para consultar automaticamente o anúncio.', box); note.setAttribute('role', 'status');
     const grid = node('div', undefined, box); grid.className = 'grid';
     for (const [name, label, value, type] of [
       ['name', 'Nome do produto', '', 'text'], ['category', 'Categoria', '', 'text'], ['marketplace', 'Marketplace identificado pelo link', '', 'text'],
@@ -91,26 +93,65 @@
       ['discount', 'Desconto exibido (R$)', '', 'number'], ['displayed_sales', 'Vendas acumuladas exibidas', '', 'number'],
       ['weight_g', 'Peso informado (g)', '', 'number'], ['dimensions', 'Dimensões informadas', '', 'text']
     ]) input(grid, name, label, value, type);
-    let previousUrl = '';
+    for (const name of ['retrieved_at', 'retrieval_method', 'image_url', 'resolved_url']) input(grid, name, '', '', 'hidden').parentElement.hidden = true;
+    const preview = node('img', undefined, box); preview.hidden = true; preview.alt = 'Imagem do anúncio concorrente'; preview.style.cssText = 'max-width:140px;max-height:140px;object-fit:contain'; preview.referrerPolicy = 'no-referrer';
+    let previousUrl = '', revision = 0, timer;
+    const importedFields = ['name', 'category', 'price', 'buyer_shipping', 'discount', 'displayed_sales', 'weight_g', 'dimensions', 'retrieved_at', 'retrieval_method', 'image_url', 'resolved_url'];
+    async function fetchListing() {
+      const source = sourceLink(urlInput.value);
+      if (!source?.marketplace) { note.textContent = 'Cole um link de anúncio da Shopee ou Mercado Livre.'; return; }
+      const current = ++revision, before = values(box);
+      lookup.disabled = true; focus.hidden = true; note.textContent = 'Consultando o anúncio no navegador…';
+      try {
+        const response = await ListingReader.read(source.url);
+        if (current !== revision || !box.isConnected || sourceLink(urlInput.value)?.url !== source.url) return;
+        if (response.data && ['ok', 'partial'].includes(response.status)) {
+          const imported = response.data, now = values(box);
+          for (const name of [...importedFields, 'collected_at']) {
+            // A late response must not overwrite an edit made while the lookup was running.
+            if (typeof imported[name] === 'string' && now[name] === before[name]) fill(box, {[name]: imported[name].slice(0, name === 'image_url' ? 2000 : 1000)});
+          }
+          if (/^https:\/\//i.test(imported.image_url || '')) { preview.src = imported.image_url; preview.hidden = false; }
+          note.textContent = response.status === 'ok' ? 'Dados preenchidos pelo anúncio. Confira se o produto e a variação são equivalentes ao seu pedido.' : 'Dados parciais preenchidos. Confira a variação na aba do anúncio e consulte novamente.';
+          if (Array.isArray(imported.warnings)) note.textContent += ' ' + imported.warnings.filter(x => typeof x === 'string').join(' ');
+          $('#result').hidden = true;
+        } else note.textContent = response.message || 'Não foi possível ler este anúncio. Tente novamente ou complete os campos disponíveis.';
+        focus.hidden = !response.can_focus;
+        if (response.status === 'missing') { $('#reader-setup').open = true; $('#reader-state').textContent = response.message; }
+      } catch (_) { if (current === revision) note.textContent = 'Não foi possível consultar o anúncio. Tente novamente.'; }
+      finally { if (current === revision) lookup.disabled = false; }
+    }
+    lookup.onclick = () => { clearTimeout(timer); fetchListing(); };
+    focus.onclick = () => run(async () => { const response = await ListingReader.focus(sourceLink(urlInput.value)?.url || ''); if (response.status !== 'focused') note.textContent = response.message; });
+
     const identify = (restoring = false) => {
       const source = sourceLink(urlInput.value);
       const nextUrl = source ? source.url : urlInput.value.trim();
-      if (!restoring && nextUrl !== previousUrl) fill(box, {price: '', collected_at: new Date().toISOString().slice(0, 10)});
+      if (!restoring && nextUrl !== previousUrl) {
+        revision++; lookup.disabled = false; focus.hidden = true; clearTimeout(timer);
+        fill(box, {...Object.fromEntries(importedFields.map(name => [name, ''])), collected_at: new Date().toISOString().slice(0, 10)});
+        preview.hidden = true; preview.removeAttribute('src');
+      }
       previousUrl = nextUrl;
       open.hidden = !source; open.removeAttribute('href');
       if (source) {
         urlInput.value = source.url; open.href = source.url;
         if (source.marketplace || !restoring) fill(box, {marketplace: source.marketplace});
-        note.textContent = source.marketplace ? `${marketplaceName(source.marketplace)} identificado. Abra o anúncio, confira a variação e informe o preço observado.` : 'Link registrado. Informe o marketplace e o preço observado.';
+        note.textContent = source.marketplace ? `${marketplaceName(source.marketplace)} identificado. A consulta preencherá os dados disponíveis do anúncio.` : 'Link registrado. Informe o marketplace e o preço observado.';
       } else {
         if (!restoring) fill(box, {marketplace: ''});
         note.textContent = urlInput.value ? 'Informe um link HTTP ou HTTPS válido, sem usuário ou senha.' : 'Cole o link do anúncio para identificar o marketplace.';
       }
       $('#result').hidden = true;
     };
-    urlInput.addEventListener('change', () => identify());
-    const remove = node('button', 'Remover concorrente', box); remove.type = 'button'; remove.className = 'secondary'; remove.onclick = () => { box.remove(); $('#result').hidden = true; };
+    urlInput.addEventListener('input', () => {
+      revision++; lookup.disabled = false; clearTimeout(timer);
+      timer = setTimeout(() => { identify(); if (sourceLink(urlInput.value)?.marketplace) fetchListing(); }, 700);
+    });
+    urlInput.addEventListener('change', () => { const changed = sourceLink(urlInput.value)?.url !== previousUrl; clearTimeout(timer); if (changed) { identify(); if (sourceLink(urlInput.value)?.marketplace) fetchListing(); } });
+    const remove = node('button', 'Remover concorrente', box); remove.type = 'button'; remove.className = 'secondary'; remove.onclick = () => { revision++; clearTimeout(timer); box.remove(); $('#result').hidden = true; };
     fill(box, data); identify(true);
+    if (/^https:\/\//i.test(data.image_url || '')) { preview.src = data.image_url; preview.hidden = false; }
   }
   const ruleDefaults = {marketplace: 'shopee', version: '1', listing_type: '', commission_pct: '0', payment_pct: '0', tax_pct: '0', fixed_fee: '0', basis: 'order', min_price: '0', max_price: '', valid_from: '', valid_until: ''};
   const ruleFields = ['marketplace', 'version', 'listing_type', 'commission_pct', 'payment_pct', 'tax_pct', 'fixed_fee', 'basis', 'min_price', 'max_price', 'valid_from', 'valid_until'];
@@ -231,6 +272,7 @@
   $('#load-history').onclick = () => run(() => refreshHistory()); $('#more-history').onclick = () => run(() => refreshHistory(true));
   $('#load-example').onclick = () => run(() => load({name: 'Dinossauro articulado — exemplo ADR-002', currency: 'BRL', order_units: '1', components: [{name:'Dinossauro', quantity:'1', weight_g:'55', hours:'3', filament_price_kg:'120', machine_hour:'2', energy_hour:'0.25', additional_cost:'0'}], failure_pct:'10', packaging_cost:'4', packaging_count:'1', target_margin_pct:'30', commercial_step:'0.01', fee_rule:{name:'Exemplo ADR-002 — conferir na conta', marketplace:'shopee', version:'exemplo-1', commission_pct:'20', fixed_fee:'4.50', basis:'order'}, competitors:[]}));
   $('#storage-note').textContent = api ? 'Modo aplicação: cálculos e histórico salvos no servidor local.' : 'Modo GitHub Pages: cálculos e cadastros ficam neste navegador. Exporte o histórico para backup antes de limpar os dados do site.';
+  ListingReader.available().then(state => { $('#reader-state').textContent = state.status === 'ready' ? 'Leitor conectado. Cole o link do anúncio para preencher automaticamente.' : state.message; });
   run(async () => {
     if (!api) {
       const saved = localStorage.getItem(key);

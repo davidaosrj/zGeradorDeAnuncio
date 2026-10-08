@@ -18,7 +18,7 @@ Essa adaptação da diretriz de backend permite utilizar o site estático solici
 3. Informar falhas, embalagens, montagem e despesas do pedido.
 4. Escolher canal e preencher/aplicar regra comercial versionada. Trocar canal zera tarifas para evitar carregar inadvertidamente taxas de outro marketplace.
 5. Informar margem, passo comercial e preço opcional de avaliação.
-6. Opcionalmente colar links de concorrentes da Shopee ou Mercado Livre, abrir os anúncios e informar preço e data de conferência de pedidos equivalentes.
+6. Opcionalmente colar links de concorrentes da Shopee ou Mercado Livre. Com o Leitor instalado, os dados disponíveis são preenchidos automaticamente; conferir produto, variação e equivalência do pedido.
 7. Calcular e salvar histórico. Exibir preços do pedido/unidade, equilíbrio, lucro/margem no preço avaliado, fator, classificação e composição de custos.
 
 Os rótulos distinguem componente, unidade/kit e pedido. A tela usa campos associados a labels, botões nativos, região de status acessível, layout responsivo e tabelas com rolagem. Conteúdo informado é renderizado com `textContent`, nunca interpolado em HTML.
@@ -37,10 +37,10 @@ CI verifica testes Python, paridade com Node, sintaxe JavaScript, sincronizaçã
 
 ## Limites desta versão
 
-Seleção de regras por categoria/faixa é manual e validada por preço/vigência. Comparação de mercado depende de dados inseridos pelo usuário. Integrações de marketplace, importação de slicer, coleta automática de concorrentes, dashboard e planejamento de capacidade permanecem evoluções futuras da ADR. Nenhuma taxa de exemplo constitui tarifa oficial.
+Seleção de regras por categoria/faixa é manual e validada por preço/vigência. Comparação de mercado usa dados lidos pelo Leitor de anúncios ou inseridos pelo usuário, conforme SPEC-008. Integrações de marketplace, importação de slicer, coleta automática de concorrentes, dashboard e planejamento de capacidade permanecem evoluções futuras da ADR. Nenhuma taxa de exemplo constitui tarifa oficial.
 
 ## Comparação por link
 
-O formulário identifica Shopee (`shopee.com.br`, incluindo subdomínios, e `shope.ee`) e Mercado Livre (`mercadolivre.com.br`, `mercadolivre.com` e `mercadolibre.com`, incluindo subdomínios) pelo hostname exato ou fronteira de subdomínio. Aceita links curtos oficiais e links completos, sem resolver redirecionamentos ou buscar preço. Pode completar `https://` quando faltar em domínio reconhecido. URLs com usuário/senha ou esquemas diferentes de HTTP(S) não geram links clicáveis. Outras fontes HTTP(S) continuam disponíveis para comparação manual sem atribuição automática de marketplace.
+O formulário identifica Shopee (`shopee.com.br`, incluindo subdomínios, e `shope.ee`) e Mercado Livre (`mercadolivre.com.br`, `mercadolivre.com` e `mercadolibre.com`, incluindo subdomínios) pelo hostname exato ou fronteira de subdomínio. Aceita links curtos oficiais e links completos, antes da consulta automática pelo Leitor de anúncios (SPEC-008). Pode completar `https://` quando faltar em domínio reconhecido. URLs com usuário/senha ou esquemas diferentes de HTTP(S) não geram links clicáveis. Outras fontes HTTP(S) continuam disponíveis para comparação manual sem atribuição automática de marketplace.
 
-O operador abre o anúncio, confere produto/variação/kit, informa o preço e registra a data. O resultado apresenta canal da fonte, preço observado, preço sugerido, lucro e margem ao igualar o concorrente, além do link de origem. A projeção usa explicitamente as tarifas do canal selecionado para a própria venda, e não presume tarifas iguais entre canais. Não há consulta automática de preço nesta versão; integração autenticada e serviço backend permanecem necessários para essa evolução.
+Com o Leitor instalado, colar o link inicia a consulta e preenche os dados encontrados e sua data. O operador confere produto/variação/kit e pode corrigir os campos; sem leitor, o preenchimento manual continua disponível. O resultado apresenta canal da fonte, preço observado, preço sugerido, lucro e margem ao igualar o concorrente, além do link de origem. A projeção usa explicitamente as tarifas do canal selecionado para a própria venda, e não presume tarifas iguais entre canais. A consulta automática pelo navegador está especificada em [SPEC-008](SPEC-008-preenchimento-automatico-concorrentes.md), incluindo instalação, dados, permissões e limites. Integração por API/servidor é uma alternativa futura.
