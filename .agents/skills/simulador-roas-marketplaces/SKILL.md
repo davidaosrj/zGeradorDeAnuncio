@@ -5,7 +5,7 @@ description: Implementar, operar ou diagnosticar o simulador de ROAS seguro dest
 
 # Simulador de ROAS para marketplaces
 
-Antes de alterar fórmulas ou recomendações, leia [`docs/adr/ADR-002-simulador-roas-seguro-marketplaces.md`](../../../docs/adr/ADR-002-simulador-roas-seguro-marketplaces.md) e [`docs/specs/SPEC-004-simulador-roas-marketplaces.md`](../../../docs/specs/SPEC-004-simulador-roas-marketplaces.md).
+Antes de alterar fórmulas ou recomendações, leia [`docs/adr/ADR-004-simulador-roas-seguro-marketplaces.md`](../../../docs/adr/ADR-004-simulador-roas-seguro-marketplaces.md) e [`docs/specs/SPEC-004-simulador-roas-marketplaces.md`](../../../docs/specs/SPEC-004-simulador-roas-marketplaces.md).
 
 ## Regras essenciais
 

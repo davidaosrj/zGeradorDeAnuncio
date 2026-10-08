@@ -2,7 +2,7 @@
 
 ## Escopo
 
-Implementar a [ADR-002](../adr/ADR-002-simulador-roas-seguro-marketplaces.md) no frontend e no MCP. O cálculo é determinístico, opera offline e mantém perfis independentes para Shopee e Mercado Livre.
+Implementar a [ADR-004](../adr/ADR-004-simulador-roas-seguro-marketplaces.md) no frontend e no MCP. O cálculo é determinístico, opera offline e mantém perfis independentes para Shopee e Mercado Livre.
 
 ## Contrato HTTP
 

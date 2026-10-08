@@ -1,0 +1,6 @@
+{
+  "name": "pricing-browser-checks",
+  "private": true,
+  "scripts": {"test": "node pricing.cjs"},
+  "devDependencies": {"playwright": "1.64.0"}
+}

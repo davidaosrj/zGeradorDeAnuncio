@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import uvicorn
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, HTMLResponse
 
@@ -16,6 +16,8 @@ from .offline import OfflineGenerationError
 from .pipeline import IMAGE_SUFFIXES, generate_advertisement
 from .repository import ProductRepository, ProductRepositoryError, normalize_sku
 from .roas import RoasValidationError, calculate_simulation, evaluate_campaign
+from .pricing import PricingError, calculate_pricing
+from .pricing_repository import PricingRepository, CATALOGS
 from .sale_calculator import calculate_ideal_price, calculate_sale_profit
 
 app = FastAPI(title="Gerador de Anúncios", version="0.2.0")
@@ -233,6 +235,51 @@ def sale_profit(data: dict) -> dict:
 def ideal_price(data: dict) -> dict:
     try: return calculate_ideal_price(data)
     except RoasValidationError as exc: raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/impressao-3d", response_class=HTMLResponse)
+def pricing_page() -> str:
+    return (STATIC_DIR / "pricing.html").read_text(encoding="utf-8")
+
+
+@app.get("/pricing-engine.js", response_class=FileResponse)
+def pricing_engine_script() -> FileResponse:
+    return FileResponse(STATIC_DIR / "pricing-engine.js", media_type="application/javascript")
+
+
+@app.get("/pricing-ui.js", response_class=FileResponse)
+def pricing_ui_script() -> FileResponse:
+    return FileResponse(STATIC_DIR / "pricing-ui.js", media_type="application/javascript")
+
+
+@app.post("/api/pricing/calculate")
+def pricing_calculate(data: dict) -> dict:
+    try:
+        result = calculate_pricing(data)
+        record = PricingRepository().save('history', result)
+        return {**result, 'history_id': record['id'], 'created_at': record['created_at']}
+    except PricingError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
+@app.get("/api/pricing/history")
+def pricing_history(limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0)) -> list:
+    return PricingRepository().list('history', limit, offset)
+
+
+@app.get("/api/pricing/catalogs/{kind}")
+def pricing_catalog_list(kind: str, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0)) -> list:
+    if kind not in CATALOGS:
+        raise HTTPException(404, 'Cadastro inválido')
+    return PricingRepository().list(kind, limit, offset)
+
+
+@app.post("/api/pricing/catalogs/{kind}")
+def pricing_catalog_save(kind: str, data: dict) -> dict:
+    try:
+        return PricingRepository().catalog(kind, data)
+    except PricingError as exc:
+        raise HTTPException(422, str(exc)) from exc
 
 
 def main() -> None:
