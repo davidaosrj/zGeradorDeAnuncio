@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Impressão 3D — ADR-002 · zonegeeklab3D</title>
+<link rel="icon" href="../logo-zonegeeklab3d.png">
+<style>
+:root{font-family:Inter,system-ui,sans-serif;color:#172033;background:#f4f6fa}*{box-sizing:border-box}body{margin:0;line-height:1.65}.wrap{max-width:960px;margin:28px auto;padding:0 20px}.button{display:inline-block;background:#172033;color:#fff;text-decoration:none;padding:12px 18px;border-radius:9px;font-weight:700}.notice{background:#fff5d6;color:#6a5015;padding:16px;border-radius:10px;margin:20px 0}article{background:#fff;border:1px solid #dfe4ec;border-radius:16px;padding:28px}h1{font-size:clamp(1.5rem,4vw,2rem);line-height:1.25}h2{margin-top:36px}pre{background:#f4f6fa;border-radius:8px;padding:16px;overflow-x:auto}.table-wrap{overflow-x:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:10px;border-bottom:1px solid #dfe4ec}a:focus-visible{outline:3px solid #e04b28;outline-offset:4px}@media(max-width:520px){article{padding:16px}.wrap{padding:0 12px}}
+</style>
+</head>
+<body><main class="wrap">
+<nav aria-label="Navegação principal"><a class="button" href="../">← Calculadora de marketplaces</a></nav>
+<div class="notice"><strong>Status: proposta.</strong> Esta página apresenta a ADR-002 de precificação para impressão 3D. A calculadora descrita no documento ainda não foi implementada.</div>
+<article>
+<h1>ADR-002 — Motor de Precificação para Impressão 3D</h1>
+<p><strong>Status:</strong> Proposta  </p>
+<p><strong>Data:</strong> 08/10/2026  </p>
+<p><strong>Projeto:</strong> Sistema de Gestão e Precificação de Impressão 3D  </p>
+<p><strong>Módulo:</strong> Cálculo de Custos, Precificação e Rentabilidade  </p>
+<p><strong>Versão:</strong> 1.0</p>
+<h2>1. Contexto</h2>
+<p>O projeto necessita de um motor de cálculo para determinar o preço de venda de produtos fabricados por impressão 3D, considerando custos de matéria-prima, utilização de equipamentos, energia elétrica, perdas de produção, embalagem, taxas dos marketplaces e margem de lucro desejada.</p>
+<p>O módulo deverá atender principalmente à comercialização de produtos fabricados em impressoras FDM, incluindo PLA, PETG, ABS e outros materiais.</p>
+<p>Atualmente, a precificação é realizada com base em uma planilha de custos que considera:</p>
+<ul><li>Peso da peça em gramas.</li><li>Preço do filamento por quilograma.</li><li>Tempo de impressão em horas.</li><li>Custo operacional da impressora por hora.</li><li>Consumo e custo de energia elétrica.</li><li>Percentual de reserva para falhas.</li><li>Custo de embalagem.</li><li>Comissão percentual do marketplace.</li><li>Tarifa fixa por pedido ou unidade, conforme as regras da plataforma.</li><li>Margem de lucro desejada.</li></ul>
+<p>O sistema deverá permitir comparar o preço calculado com preços praticados no mercado e identificar automaticamente produtos economicamente viáveis.</p>
+<h2>2. Decisão arquitetural</h2>
+<p>Será implementado um <strong>motor de precificação independente das interfaces e dos marketplaces</strong>, responsável pelos cálculos financeiros e pela aplicação das regras comerciais.</p>
+<p>A arquitetura será modular, permitindo integrar diferentes plataformas de vendas sem modificar o núcleo de cálculo.</p>
+<h3>Componentes principais</h3>
+<p><strong>Pricing Engine</strong></p>
+<p>Responsável por calcular custos, preços de equilíbrio, preços sugeridos, margens e rentabilidade.</p>
+<p><strong>Material Catalog</strong></p>
+<p>Gerencia materiais, fabricantes, tipos de filamento, cores e custo por quilograma.</p>
+<p><strong>Printer Profile</strong></p>
+<p>Armazena características e custos operacionais das impressoras utilizadas.</p>
+<p><strong>Marketplace Fee Engine</strong></p>
+<p>Gerencia comissões, tarifas fixas, regras por categoria, faixas de preço e demais cobranças.</p>
+<p><strong>Product Costing</strong></p>
+<p>Gerencia os dados de fabricação dos produtos, incluindo peso, tempo, suportes, perdas e embalagem.</p>
+<p><strong>Market Comparison</strong></p>
+<p>Compara o preço sugerido com os valores encontrados em anúncios concorrentes, mantendo fonte e data de coleta.</p>
+<p><strong>Pricing Simulation</strong></p>
+<p>Permite simular diferentes cenários de produção, preços, margens e marketplaces.</p>
+<h2>3. Parâmetros iniciais</h2>
+<div class="table-wrap"><table><thead><tr><th>Parâmetro</th><th>Valor padrão</th></tr></thead><tbody><tr><td>Preço do filamento</td><td>R$ 120,00/kg</td></tr><tr><td>Custo da impressora</td><td>R$ 2,00/h</td></tr><tr><td>Energia elétrica</td><td>R$ 0,25/h</td></tr><tr><td>Reserva para falhas</td><td>10%</td></tr><tr><td>Embalagem</td><td>R$ 4,00</td></tr><tr><td>Comissão Shopee</td><td>20%</td></tr><tr><td>Tarifa fixa Shopee</td><td>R$ 4,50</td></tr><tr><td>Margem de lucro desejada</td><td>30%</td></tr></tbody></table></div>
+<p>Os valores são parâmetros iniciais do projeto e não devem ser codificados diretamente nas fórmulas.</p>
+<p>As tarifas de marketplace devem ser configuráveis, versionadas e atualizadas conforme as regras contratuais vigentes.</p>
+<p>A tarifa de R$ 4,50 da Shopee será utilizada como configuração inicial informada pelo operador, sem presumir que se aplique a todos os pedidos ou categorias.</p>
+<h2>4. Fórmulas de cálculo</h2>
+<h3>4.1. Custo do material</h3>
+<pre><code>custo_material =
+    (peso_gramas / 1000) * preco_filamento_kg</code></pre>
+<p>O peso informado deverá representar o consumo total estimado de filamento, incluindo suportes e demais estruturas descartáveis.</p>
+<h3>4.2. Custo operacional da impressora</h3>
+<pre><code>custo_maquina =
+    tempo_impressao_horas * custo_maquina_hora</code></pre>
+<h3>4.3. Custo de energia</h3>
+<pre><code>custo_energia =
+    tempo_impressao_horas * custo_energia_hora</code></pre>
+<h3>4.4. Subtotal de fabricação</h3>
+<pre><code>subtotal =
+    custo_material
+    + custo_maquina
+    + custo_energia
+    + custos_adicionais</code></pre>
+<h3>4.5. Reserva para falhas</h3>
+<pre><code>reserva_falhas =
+    subtotal * percentual_falhas</code></pre>
+<h3>4.6. Custo total de produção</h3>
+<pre><code>custo_producao =
+    subtotal
+    + reserva_falhas
+    + custo_embalagem</code></pre>
+<p>O custo de embalagem será contabilizado conforme a quantidade de embalagens efetivamente necessárias para o pedido.</p>
+<h3>4.7. Preço de equilíbrio</h3>
+<p>Considerando comissão percentual e tarifa fixa:</p>
+<pre><code>preco_equilibrio =
+    (custo_producao + tarifa_fixa)
+    / (1 - comissao_percentual)</code></pre>
+<p>Esse é o preço mínimo para que o resultado operacional calculado seja zero, antes de custos ou tributos não configurados.</p>
+<h3>4.8. Preço de venda com margem desejada</h3>
+<p>A margem será definida como percentual da receita bruta de venda.</p>
+<pre><code>preco_venda =
+    (custo_producao + tarifa_fixa)
+    / (1 - comissao_percentual - margem_desejada)</code></pre>
+<p><strong>Regra obrigatória:</strong> a soma da comissão percentual e da margem desejada deverá ser inferior a 100%.</p>
+<h3>4.9. Lucro operacional estimado</h3>
+<pre><code>lucro =
+    preco_venda
+    - (preco_venda * comissao_percentual)
+    - tarifa_fixa
+    - custo_producao</code></pre>
+<h3>4.10. Margem efetiva</h3>
+<pre><code>margem_efetiva =
+    (lucro / preco_venda) * 100</code></pre>
+<h3>4.11. Fator multiplicador</h3>
+<pre><code>fator_multiplicador =
+    preco_venda / custo_producao</code></pre>
+<p>O fator multiplicador efetivo poderá variar entre produtos, especialmente devido à tarifa fixa.</p>
+<p>Não deverá ser adotado um multiplicador universal sobre o peso ou o custo do filamento.</p>
+<h2>5. Exemplo de cálculo</h2>
+<p>Produto: dinossauro articulado.</p>
+<div class="table-wrap"><table><thead><tr><th>Entrada</th><th>Valor</th></tr></thead><tbody><tr><td>Peso</td><td>55 g</td></tr><tr><td>Tempo de impressão</td><td>3 horas</td></tr><tr><td>Filamento</td><td>R$ 120/kg</td></tr><tr><td>Máquina</td><td>R$ 2/h</td></tr><tr><td>Energia</td><td>R$ 0,25/h</td></tr><tr><td>Falhas</td><td>10%</td></tr><tr><td>Embalagem</td><td>R$ 4</td></tr><tr><td>Comissão</td><td>20%</td></tr><tr><td>Tarifa fixa</td><td>R$ 4,50</td></tr><tr><td>Margem desejada</td><td>30%</td></tr></tbody></table></div>
+<p><strong>Cálculo:</strong></p>
+<pre><code>Material = 55 / 1000 * 120
+         = R$ 6,60
+
+Máquina = 3 * 2,00
+        = R$ 6,00
+
+Energia = 3 * 0,25
+        = R$ 0,75
+
+Subtotal = R$ 13,35
+
+Reserva para falhas = R$ 1,335
+
+Custo total = 13,35 + 1,335 + 4,00
+            = R$ 18,685
+
+Preço calculado =
+    (18,685 + 4,50) / (1 - 0,20 - 0,30)
+
+Preço calculado = R$ 46,37</code></pre>
+<p>Preço comercial sugerido: <strong>R$ 46,90</strong>, respeitando a margem mínima configurada.</p>
+<p>O arredondamento comercial deverá ocorrer para cima quando necessário para preservar a margem.</p>
+<h2>6. Regras específicas dos marketplaces</h2>
+<h3>Shopee</h3>
+<p>O módulo deverá suportar:</p>
+<ul><li>Comissão percentual configurável.</li><li>Tarifa fixa configurável.</li><li>Tarifas por categoria e faixa de preço.</li><li>Campanhas promocionais.</li><li>Descontos subsidiados pelo vendedor.</li><li>Custos adicionais por pedido.</li><li>Quantidade de unidades por pedido.</li><li>Distribuição dos custos fixos entre os itens.</li></ul>
+<h3>Mercado Livre</h3>
+<p>O módulo deverá suportar:</p>
+<ul><li>Tipo de anúncio.</li><li>Categoria do produto.</li><li>Comissão percentual.</li><li>Custos fixos aplicáveis.</li><li>Participação do vendedor no frete.</li><li>Custos de logística e fulfillment.</li><li>Regras específicas por faixa de preço.</li></ul>
+<p>As regras financeiras de cada marketplace serão independentes.</p>
+<h3>Venda direta</h3>
+<p>Deverá permitir:</p>
+<ul><li>Ausência de comissão de marketplace.</li><li>Tarifas de meios de pagamento.</li><li>Custos de entrega.</li><li>Descontos comerciais.</li><li>Margem personalizada.</li></ul>
+<h2>7. Precificação de kits</h2>
+<p>O sistema deverá permitir agrupar diferentes produtos em um único anúncio.</p>
+<p>Exemplo:</p>
+<p><strong>Kit de pistas e lançador</strong></p>
+<ul><li>1 lançador.</li><li>2 pistas.</li><li>6 conectores.</li><li>1 embalagem.</li></ul>
+<p>O custo de produção do kit será a soma dos custos de seus componentes, acrescida dos custos de montagem, embalagem e demais despesas aplicáveis.</p>
+<p>A tarifa fixa deverá ser aplicada conforme a unidade de cobrança estabelecida pelo marketplace, evitando duplicidade quando uma única tarifa for cobrada por pedido.</p>
+<pre><code>custo_kit =
+    soma(custos_componentes)
+    + custo_montagem
+    + embalagem_kit</code></pre>
+<pre><code>preco_kit =
+    (custo_kit + tarifas_fixas_aplicaveis)
+    / (1 - comissao - margem_desejada)</code></pre>
+<h2>8. Comparação de mercado</h2>
+<p>O sistema deverá armazenar:</p>
+<ul><li>Nome do produto.</li><li>Categoria.</li><li>Marketplace.</li><li>URL do anúncio.</li><li>Preço anunciado.</li><li>Frete e descontos conhecidos.</li><li>Quantidade de vendas exibida, quando disponível.</li><li>Data e horário da coleta.</li><li>Peso e dimensões, quando informados.</li><li>Preço sugerido pelo motor.</li><li>Margem estimada ao igualar o preço concorrente.</li></ul>
+<p>O sistema não deverá interpretar automaticamente vendas acumuladas como vendas de um período específico.</p>
+<h3>Classificação de viabilidade</h3>
+<div class="table-wrap"><table><thead><tr><th>Classificação</th><th>Critério</th></tr></thead><tbody><tr><td>Alta</td><td>Margem efetiva maior ou igual à margem desejada</td></tr><tr><td>Moderada</td><td>Margem positiva, mas inferior à desejada</td></tr><tr><td>Inviável</td><td>Lucro operacional estimado igual ou inferior a zero</td></tr><tr><td>Indeterminada</td><td>Dados essenciais ausentes</td></tr></tbody></table></div>
+<h2>9. Modelo de dados inicial</h2>
+<h3>Material</h3>
+<pre><code>id
+nome
+tipo
+fabricante
+cor
+preco_kg
+data_atualizacao</code></pre>
+<h3>Printer</h3>
+<pre><code>id
+modelo
+custo_hora
+energia_hora
+status</code></pre>
+<h3>Product</h3>
+<pre><code>id
+sku
+nome
+categoria
+peso_gramas
+tempo_impressao_horas
+material_id
+printer_id
+custo_embalagem
+custos_adicionais</code></pre>
+<h3>MarketplaceFeeRule</h3>
+<pre><code>id
+marketplace
+categoria
+tipo_anuncio
+comissao_percentual
+tarifa_fixa
+base_cobranca
+preco_minimo
+preco_maximo
+vigencia_inicio
+vigencia_fim</code></pre>
+<h3>PricingResult</h3>
+<pre><code>product_id
+marketplace
+custo_material
+custo_maquina
+custo_energia
+reserva_falhas
+custo_producao
+tarifas_marketplace
+preco_equilibrio
+preco_calculado
+preco_comercial
+lucro_estimado
+margem_efetiva
+fator_multiplicador
+data_calculo</code></pre>
+<p>Os resultados deverão armazenar uma cópia dos parâmetros utilizados, garantindo rastreabilidade histórica mesmo após alterações de tarifas ou custos.</p>
+<h2>10. Arquitetura de implementação</h2>
+<p>O motor de precificação deverá funcionar independentemente do frontend.</p>
+<p>Fluxo lógico:</p>
+<pre><code>Cadastro de produto
+        |
+        v
+Dados de impressão
+        |
+        v
+Material + Perfil da impressora
+        |
+        v
+Motor de custos
+        |
+        v
+Regras do marketplace
+        |
+        v
+Motor de precificação
+        |
+        v
+Análise de margem e lucro
+        |
+        v
+Comparação com concorrentes
+        |
+        v
+Preço comercial sugerido</code></pre>
+<h3>Diretrizes técnicas</h3>
+<ul><li>Cálculos financeiros no backend.</li><li>Utilização de aritmética decimal exata, evitando `float` para valores monetários.</li><li>Armazenamento de moeda e unidade monetária.</li><li>Percentuais normalizados.</li><li>Separação entre custo por unidade e custo por pedido.</li><li>Arredondamento financeiro explícito.</li><li>Versionamento de regras comerciais.</li><li>Registro dos parâmetros de cada simulação.</li><li>API independente da interface gráfica.</li><li>Testes unitários para fórmulas e regras.</li></ul>
+<h2>11. Critérios de aceitação</h2>
+<p>A implementação será considerada funcional quando:</p>
+<ol><li>Calcular corretamente o custo de material por peso.</li><li>Calcular os custos operacionais pelo tempo de impressão.</li><li>Aplicar a reserva para falhas.</li><li>Considerar embalagem e despesas adicionais.</li><li>Aplicar comissão percentual e tarifa fixa.</li><li>Calcular preço de equilíbrio.</li><li>Calcular preço de venda para a margem desejada.</li><li>Calcular lucro e margem efetiva para qualquer preço informado.</li><li>Suportar kits e múltiplas unidades por pedido.</li><li>Diferenciar as tarifas da Shopee e do Mercado Livre.</li><li>Comparar preços próprios com preços de concorrentes.</li><li>Preservar o histórico dos cálculos.</li><li>Rejeitar configurações matematicamente inválidas.</li><li>Manter precisão monetária e arredondamento consistente.</li></ol>
+<h2>12. Consequências da decisão</h2>
+<h3>Positivas</h3>
+<ul><li>Padronização da precificação.</li><li>Redução de erros de cálculo.</li><li>Identificação de produtos com baixa rentabilidade.</li><li>Simulação de diferentes estratégias de venda.</li><li>Facilidade para atualizar tarifas dos marketplaces.</li><li>Reutilização do motor em aplicações web e mobile.</li><li>Maior rastreabilidade financeira.</li></ul>
+<h3>Negativas e riscos</h3>
+<ul><li>Necessidade de atualização frequente das regras dos marketplaces.</li><li>Dependência da qualidade dos dados informados pelo fatiador.</li><li>Variação dos custos reais entre impressoras.</li><li>Possíveis diferenças entre custos estimados e custos efetivos.</li><li>Necessidade de tratar corretamente tarifas por pedido, unidade e faixa de preço.</li></ul>
+<h2>13. Evoluções futuras</h2>
+<ul><li>Importação de informações do Orca Slicer e Creality Print.</li><li>Leitura de peso e tempo estimados a partir de arquivos de projeto ou relatórios de fatiamento.</li><li>Importação de custos de pedidos reais.</li><li>Integração com Shopee e Mercado Livre por APIs autorizadas.</li><li>Análise de produtos concorrentes.</li><li>Histórico de preços de filamentos.</li><li>Precificação automática de kits.</li><li>Análise de lucratividade por SKU.</li><li>Simulação de descontos promocionais.</li><li>Dashboard de produtos mais rentáveis.</li><li>Comparação entre diferentes impressoras.</li><li>Cálculo de capacidade produtiva e prazo de fabricação.</li></ul>
+<h2>14. Decisão final</h2>
+<p>Adotar um motor centralizado, configurável e independente para calcular os custos e os preços de produtos fabricados por impressão 3D.</p>
+<p>A precificação deverá considerar obrigatoriamente o custo de fabricação, as tarifas percentuais e fixas dos canais de venda, os custos adicionais e a margem desejada.</p>
+<p>O sistema deverá apresentar não apenas o preço sugerido, mas também o lucro operacional estimado, a margem efetiva e o fator multiplicador.</p>
+<p><strong>Status final:</strong> Proposta — aguardando aprovação e implementação.</p>
+</article></main></body></html>
