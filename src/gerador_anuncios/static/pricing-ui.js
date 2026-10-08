@@ -61,17 +61,56 @@
     const remove = node('button', 'Remover componente', box); remove.type = 'button'; remove.className = 'secondary'; remove.onclick = () => box.remove();
     fill(box, data); refreshChoices();
   }
+  function sourceLink(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return null;
+    try {
+      const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`);
+      if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return null;
+      const host = url.hostname.toLowerCase();
+      const under = domain => host === domain || host.endsWith('.' + domain);
+      const marketplace = under('shopee.com.br') || host === 'shope.ee' ? 'shopee' : under('mercadolivre.com.br') || under('mercadolivre.com') || under('mercadolibre.com') ? 'mercado_livre' : '';
+      // Only add a missing scheme for a recognized marketplace.
+      if (!/^https?:\/\//i.test(value) && !marketplace) return null;
+      return {url: url.href, marketplace};
+    } catch (_) { return null; }
+  }
+  const marketplaceName = value => ({shopee: 'Shopee', mercado_livre: 'Mercado Livre', direct: 'Venda direta'}[value] || value || 'Não informado');
   function competitor(data = {}) {
     const box = node('fieldset', undefined, $('#competitors')); box.className = 'component'; node('legend', 'Anúncio concorrente', box);
+    const urlInput = input(box, 'url', 'Link do anúncio da Shopee ou Mercado Livre', '', 'url');
+    urlInput.placeholder = 'https://shopee.com.br/... ou https://produto.mercadolivre.com.br/...';
+    const linkActions = node('div', undefined, box); linkActions.className = 'actions';
+    const open = node('a', 'Abrir anúncio para conferir', linkActions); open.className = 'button secondary'; open.target = '_blank'; open.rel = 'noopener noreferrer'; open.hidden = true;
+    const note = node('p', 'Cole o link, confira a variação e informe o preço do mesmo produto ou kit.', box); note.setAttribute('role', 'status');
     const grid = node('div', undefined, box); grid.className = 'grid';
     for (const [name, label, value, type] of [
-      ['name', 'Nome do produto', '', 'text'], ['category', 'Categoria', '', 'text'], ['marketplace', 'Marketplace', '', 'text'],
-      ['url', 'URL da fonte', '', 'url'], ['collected_at', 'Data da coleta', new Date().toISOString().slice(0, 10), 'date'],
-      ['price', 'Preço para o mesmo pedido (R$)', '', 'number'], ['buyer_shipping', 'Frete ao comprador (R$)', '', 'number'],
+      ['name', 'Nome do produto', '', 'text'], ['category', 'Categoria', '', 'text'], ['marketplace', 'Marketplace identificado pelo link', '', 'text'],
+      ['collected_at', 'Data em que você conferiu o preço', new Date().toISOString().slice(0, 10), 'date'],
+      ['price', 'Preço observado para o mesmo pedido (R$)', '', 'number'], ['buyer_shipping', 'Frete ao comprador (R$)', '', 'number'],
       ['discount', 'Desconto exibido (R$)', '', 'number'], ['displayed_sales', 'Vendas acumuladas exibidas', '', 'number'],
       ['weight_g', 'Peso informado (g)', '', 'number'], ['dimensions', 'Dimensões informadas', '', 'text']
     ]) input(grid, name, label, value, type);
-    const remove = node('button', 'Remover concorrente', box); remove.type = 'button'; remove.className = 'secondary'; remove.onclick = () => box.remove(); fill(box, data);
+    let previousUrl = '';
+    const identify = (restoring = false) => {
+      const source = sourceLink(urlInput.value);
+      const nextUrl = source ? source.url : urlInput.value.trim();
+      if (!restoring && nextUrl !== previousUrl) fill(box, {price: '', collected_at: new Date().toISOString().slice(0, 10)});
+      previousUrl = nextUrl;
+      open.hidden = !source; open.removeAttribute('href');
+      if (source) {
+        urlInput.value = source.url; open.href = source.url;
+        if (source.marketplace || !restoring) fill(box, {marketplace: source.marketplace});
+        note.textContent = source.marketplace ? `${marketplaceName(source.marketplace)} identificado. Abra o anúncio, confira a variação e informe o preço observado.` : 'Link registrado. Informe o marketplace e o preço observado.';
+      } else {
+        if (!restoring) fill(box, {marketplace: ''});
+        note.textContent = urlInput.value ? 'Informe um link HTTP ou HTTPS válido, sem usuário ou senha.' : 'Cole o link do anúncio para identificar o marketplace.';
+      }
+      $('#result').hidden = true;
+    };
+    urlInput.addEventListener('change', () => identify());
+    const remove = node('button', 'Remover concorrente', box); remove.type = 'button'; remove.className = 'secondary'; remove.onclick = () => { box.remove(); $('#result').hidden = true; };
+    fill(box, data); identify(true);
   }
   const ruleDefaults = {marketplace: 'shopee', version: '1', listing_type: '', commission_pct: '0', payment_pct: '0', tax_pct: '0', fixed_fee: '0', basis: 'order', min_price: '0', max_price: '', valid_from: '', valid_until: ''};
   const ruleFields = ['marketplace', 'version', 'listing_type', 'commission_pct', 'payment_pct', 'tax_pct', 'fixed_fee', 'basis', 'min_price', 'max_price', 'valid_from', 'valid_until'];
@@ -104,7 +143,16 @@
       const row = node('tr', undefined, $('#breakdown')); node('th', label, row).scope = 'row'; node('td', brl(result[key]), row);
     }
     $('#comparisons').replaceChildren();
-    for (const c of result.comparisons) node('p', `${c.observation.name || 'Concorrente'}: ${c.classification}${c.profit !== undefined ? ` · lucro ${brl(c.profit)} · margem ${c.margin_pct}%` : ' · dados incompletos ou fora da faixa da tarifa'}`, $('#comparisons'));
+    for (const c of result.comparisons) {
+      const card = node('div', undefined, $('#comparisons')); card.className = 'component';
+      node('h4', c.observation.name || 'Concorrente', card);
+      node('p', `${marketplaceName(c.observation.marketplace)} · conferido em ${c.observation.collected_at || 'data não informada'}`, card);
+      if (c.price !== undefined) node('p', `Preço do concorrente: ${brl(c.price)} · seu preço sugerido: ${brl(result.commercial_price)}`, card);
+      node('p', `${c.classification}${c.profit !== undefined ? ` · seu lucro ao igualar: ${brl(c.profit)} · sua margem: ${c.margin_pct}%` : ' · informe preço e data, e confira a faixa da tarifa'}`, card);
+      const source = sourceLink(c.observation.url);
+      if (source) { const link = node('a', 'Ver anúncio do concorrente', card); link.href = source.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+    }
+    if (result.comparisons.length) node('p', `Projeção usando seus custos e a regra de ${marketplaceName(result.snapshot.fee_rule.marketplace)}. Para vender em outro canal, selecione as tarifas desse canal e calcule novamente.`, $('#comparisons'));
     if (!result.comparisons.length) node('p', 'Nenhum concorrente informado.', $('#comparisons'));
   }
   async function run(action) { try { await action(); } catch (e) { message(e.message, true); } }
