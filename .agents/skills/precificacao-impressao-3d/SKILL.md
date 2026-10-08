@@ -23,3 +23,7 @@ Leia a [ADR-002](../../../docs/adr/ADR-002-motor-precificacao-impressao-3d.md) e
 Fontes: `src/gerador_anuncios/pricing.py`, `pricing_repository.py` e `static/pricing*`. Atualize ambos os motores ao alterar fórmulas. Gere o Pages com `python scripts/build_pricing_site.py`; não edite isoladamente a cópia gerada.
 
 Execute testes de precificação/API e paridade Python/Node. Preserve o exemplo da ADR (18,685 de custo e 46,37 de preço) e cubra qualquer novo limite financeiro introduzido. Depois execute a suíte do CI. Use o fluxo CI/CD do repositório para publicação; não considere push de branch como deploy concluído.
+
+## Leitura automática de anúncios
+
+Para preenchimento por link, leia a [SPEC-008](../../../docs/specs/SPEC-008-preenchimento-automatico-concorrentes.md). A extensão em `extensions/leitor-anuncios` lê somente dados do produto na aba criada para a consulta; não solicita cookies ou senhas e não contorna login/verificação. Preços de parcelas, recomendações ou faixas ambíguas não devem virar preço único. Preserve mensagens de dados parciais e edição manual durante consultas. Gere o pacote com o mesmo script do Pages e execute `tests/browser/reader.cjs`. Distinga testes com fixtures da validação em anúncios reais. A instalação no navegador do usuário é necessária e não pode ser declarada concluída pela publicação do ZIP.

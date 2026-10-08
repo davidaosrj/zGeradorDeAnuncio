@@ -55,8 +55,9 @@ const server = http.createServer(async (req, res) => {
     await page.locator('[data-catalog=materials]').first().selectOption(materialOption);
     assert.equal(await page.locator('#components [name=filament_price_kg]').first().inputValue(), '120');
     await page.getByRole('button', {name: 'Adicionar concorrente'}).click();
-    await page.locator('#competitors [name=name]').fill('<img src=x onerror=alert(1)>');
     await page.locator('#competitors [name=url]').fill('https://example.com/product');
+    await page.locator('#competitors [name=url]').blur();
+    await page.locator('#competitors [name=name]').fill('<img src=x onerror=alert(1)>');
     await page.locator('#competitors [name=price]').fill('200');
     await page.getByRole('button', {name: 'Calcular preço e lucro'}).click();
     await page.waitForFunction(() => document.querySelector('#comparisons').textContent.includes('<img'));

@@ -1,0 +1,19 @@
+Leitor de anúncios — zonegeeklab3D
+
+1. Extraia este ZIP em uma pasta permanente.
+2. Abra chrome://extensions (Chrome) ou edge://extensions (Edge).
+3. Ative o Modo de desenvolvedor.
+4. Clique em Carregar sem compactação e selecione esta pasta (a que contém manifest.json).
+5. Recarregue a calculadora em https://davidaosrj.github.io/zGeradorDeAnuncio/impressao-3d/.
+6. Adicione um concorrente e cole o link. A consulta começa automaticamente.
+
+O leitor abre uma aba do anúncio e lê dados de produto visíveis/estruturados.
+Não lê cookies, senhas, pedidos ou mensagens. Não envia dados para serviços de terceiros.
+Comunica-se somente com esta calculadora (e a aplicação local na porta 8000).
+Em caso de login/verificação, use Concluir acesso no anúncio e depois Preencher pelo link.
+Quando houver várias variações ou o preço não estiver disponível, não inventa um valor.
+Confira produto, quantidade e variação antes de usar a comparação.
+Não há cálculo de frete por CEP nem coleta de dados privados da conta.
+
+Para atualizar: extraia a nova versão na mesma pasta e clique em Recarregar na tela de extensões.
+Para desinstalar: clique em Remover na tela de extensões.
